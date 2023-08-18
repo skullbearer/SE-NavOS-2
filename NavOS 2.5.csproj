@@ -39,12 +39,12 @@
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
     <Compile Include="CoreSystemsPbApi.cs" />
+    <Compile Include="RetroCruiseControl.cs" />
+    <Compile Include="ICruiseController.cs" />
     <Compile Include="IAimController.cs" />
     <Compile Include="JitAim.cs" />
     <Compile Include="MathEx.cs" />
     <Compile Include="Profiler.cs" />
-    <Compile Include="RetroCruise.cs" />
-    <Compile Include="Cruise.cs" />
     <Compile Include="MDK\Bootstrapper.cs" />
     <AdditionalFiles Include="MDK\MDK.options.props">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
