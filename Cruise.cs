@@ -61,8 +61,8 @@ namespace IngameScript
             if (currentSpeed < cruiseSpeed && stopDist < remainingDist)
             {
                 navRef.DampenersOverride = true;
-                foreThrusters.ForEach(t => t.ThrustOverridePercentage = 1);
-                backThrusters.ForEach(t => t.Enabled = false);
+                thrusters[Base6Directions.Direction.Forward].ForEach(t => t.ThrustOverridePercentage = 1);
+                thrusters[Base6Directions.Direction.Backward].ForEach(t => t.Enabled = false);
                 var g = gyros.First();
                 g.Pitch = 0;
                 g.Yaw = 0;
@@ -80,8 +80,8 @@ namespace IngameScript
             if (stopDist < remainingDist)
             {
                 navRef.DampenersOverride = true;
-                foreThrusters.ForEach(t => t.ThrustOverridePercentage = 0);
-                backThrusters.ForEach(t => t.Enabled = false);
+                thrusters[Base6Directions.Direction.Forward].ForEach(t => t.ThrustOverridePercentage = 0);
+                thrusters[Base6Directions.Direction.Backward].ForEach(t => t.Enabled = false);
                 var g = gyros.First();
                 g.Pitch = 0;
                 g.Yaw = 0;
@@ -97,8 +97,8 @@ namespace IngameScript
             if (currentSpeed > 5)
             {
                 navRef.DampenersOverride = true;
-                foreThrusters.ForEach(t => t.ThrustOverridePercentage = 0);
-                backThrusters.ForEach(t => t.Enabled = true);
+                thrusters[Base6Directions.Direction.Forward].ForEach(t => t.ThrustOverridePercentage = 0);
+                thrusters[Base6Directions.Direction.Backward].ForEach(t => t.Enabled = true);
                 var g = gyros.First();
                 g.Pitch = 0;
                 g.Yaw = 0;

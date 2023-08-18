@@ -30,7 +30,7 @@ namespace IngameScript
             float gridMass = navRef.CalculateShipMass().PhysicalMass;
             Vector3D mySpeedVec = navRef.GetShipVelocities().LinearVelocity;
             double mySpeed = mySpeedVec.Length();
-            double forwardThrust = foreThrusters.FindAll(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            double forwardThrust = thrusters[Base6Directions.Direction.Forward].FindAll(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
             
             //in m/s^2
             double accel = forwardThrust / gridMass;
@@ -118,12 +118,12 @@ namespace IngameScript
             aim.Orient(aimDir, gyro, navRef.WorldMatrix);
             if (GetAccuracy(aimDir) > 0.99999)
             {
-                foreThrusters.ForEach(t => t.ThrustOverridePercentage = 1);
+                thrusters[Base6Directions.Direction.Forward].ForEach(t => t.ThrustOverridePercentage = 1);
                 navRef.DampenersOverride = true;
             }
             else
             {
-                foreThrusters.ForEach(t => t.ThrustOverridePercentage = 0);
+                thrusters[Base6Directions.Direction.Forward].ForEach(t => t.ThrustOverridePercentage = 0);
                 navRef.DampenersOverride = false;
             }
         }
@@ -131,7 +131,7 @@ namespace IngameScript
         void RetroCruiseStage(Vector3D shipVelocity)
         {
             aimDir = -shipVelocity;
-            foreThrusters.ForEach(t => t.ThrustOverridePercentage = 0);
+            thrusters[Base6Directions.Direction.Forward].ForEach(t => t.ThrustOverridePercentage = 0);
             navRef.DampenersOverride = false;
 
             aim.Orient(aimDir, gyro, navRef.WorldMatrix);

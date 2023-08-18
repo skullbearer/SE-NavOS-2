@@ -38,8 +38,15 @@ namespace IngameScript
         const string forwardThrustGroupOverride = "ForwardThrust";
 
         #endregion mdk preserve
-        readonly List<IMyThrust> foreThrusters = new List<IMyThrust>();
-        readonly List<IMyThrust> backThrusters = new List<IMyThrust>();
+        private readonly Dictionary<Base6Directions.Direction, List<IMyThrust>> thrusters = new Dictionary<Base6Directions.Direction, List<IMyThrust>>
+        {
+            { Base6Directions.Direction.Forward, new List<IMyThrust>() },
+            { Base6Directions.Direction.Backward, new List<IMyThrust>() },
+            { Base6Directions.Direction.Right, new List<IMyThrust>() },
+            { Base6Directions.Direction.Left, new List<IMyThrust>() },
+            { Base6Directions.Direction.Up, new List<IMyThrust>() },
+            { Base6Directions.Direction.Down, new List<IMyThrust>() },
+        };
         readonly List<IMyGyro> gyros = new List<IMyGyro>();
         IMyCockpit navRef;
         IMyGyro gyro;
@@ -50,6 +57,7 @@ namespace IngameScript
         CruiseStageEnum cruiseStage = CruiseStageEnum.None;
         double cruiseDist = 0;
         double cruiseSpeed = 0;
+        bool speedMatch = false;
 
         Vector3D startPos;
         double ETA = 0;
@@ -59,10 +67,12 @@ namespace IngameScript
         float backThrust = 0;
 
         readonly DateTime bootTime;
-        const string versionInfo = "2.2";
+        const string versionInfo = "2.3";
 
         IAimController aim;
         Profiler profiler;
+        WcPbApi wcApi;
+        bool wcApiActive = false;
 
         public Program()
         {
@@ -71,6 +81,10 @@ namespace IngameScript
 
             aim = new JitAim(Me.CubeGrid.GridSizeEnum);
             profiler = new Profiler(this);
+            wcApi = new WcPbApi();
+
+            try { wcApiActive = wcApi.Activate(Me); }
+            catch { wcApiActive = false; }
 
             UpdateBlocks();
         }
@@ -85,6 +99,11 @@ namespace IngameScript
             if ((updateSource & UpdateType.Update10) != 0)
             {
                 WritePbOutput();
+
+                if (speedMatch)
+                {
+                    SpeedMatch();
+                }
             }
 
             if (cruiseActive)
@@ -101,6 +120,62 @@ namespace IngameScript
             else if (retro)
             {
                 RetroDecel(retroDecel);
+            }
+        }
+
+        void SpeedMatch()
+        {
+            if (!wcApiActive)
+            {
+                try { wcApiActive = wcApi.Activate(Me); }
+                catch { wcApiActive = false; }
+            }
+            
+            if (wcApiActive)
+            {
+                MyDetectedEntityInfo? target = wcApi.GetAiFocus(Me.CubeGrid.EntityId);
+                if (target.HasValue)
+                {
+                    Vector3D relativeSpeed = target.Value.Velocity - navRef.GetShipVelocities().LinearVelocity;
+                    if (Vector3D.Angle(relativeSpeed, navRef.WorldMatrix.Forward) > Math.PI / 2)
+                    {
+                        float dot = Vector3.Dot(relativeSpeed, navRef.WorldMatrix.Forward);
+                        thrusters[Base6Directions.Direction.Backward].ForEach(t => t.ThrustOverridePercentage = dot);
+                        thrusters[Base6Directions.Direction.Forward].ForEach(t => t.ThrustOverridePercentage = 0);
+                    }
+                    else
+                    {
+                        float dot = Vector3.Dot(relativeSpeed, navRef.WorldMatrix.Backward);
+                        thrusters[Base6Directions.Direction.Forward].ForEach(t => t.ThrustOverridePercentage = dot);
+                        thrusters[Base6Directions.Direction.Backward].ForEach(t => t.ThrustOverridePercentage = 0);
+                    }
+
+                    if (Vector3D.Angle(relativeSpeed, navRef.WorldMatrix.Right) > Math.PI / 2)
+                    {
+                        float dot = Vector3.Dot(relativeSpeed, navRef.WorldMatrix.Right);
+                        thrusters[Base6Directions.Direction.Left].ForEach(t => t.ThrustOverridePercentage = dot);
+                        thrusters[Base6Directions.Direction.Right].ForEach(t => t.ThrustOverridePercentage = 0);
+                    }
+                    else
+                    {
+                        float dot = Vector3.Dot(relativeSpeed, navRef.WorldMatrix.Left);
+                        thrusters[Base6Directions.Direction.Right].ForEach(t => t.ThrustOverridePercentage = dot);
+                        thrusters[Base6Directions.Direction.Left].ForEach(t => t.ThrustOverridePercentage = 0);
+                    }
+
+                    if (Vector3D.Angle(relativeSpeed, navRef.WorldMatrix.Up) > Math.PI / 2)
+                    {
+                        float dot = Vector3.Dot(relativeSpeed, navRef.WorldMatrix.Up);
+                        thrusters[Base6Directions.Direction.Down].ForEach(t => t.ThrustOverridePercentage = dot);
+                        thrusters[Base6Directions.Direction.Up].ForEach(t => t.ThrustOverridePercentage = 0);
+                    }
+                    else
+                    {
+                        float dot = Vector3.Dot(relativeSpeed, navRef.WorldMatrix.Down);
+                        thrusters[Base6Directions.Direction.Up].ForEach(t => t.ThrustOverridePercentage = dot);
+                        thrusters[Base6Directions.Direction.Down].ForEach(t => t.ThrustOverridePercentage = 0);
+                    }
+                }
             }
         }
 
@@ -154,8 +229,8 @@ namespace IngameScript
                         cruiseSpeed = double.Parse(arg[2]);
                         startPos = Me.CubeGrid.GetPosition();
 
-                        foreThrust = foreThrusters.FindAll(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-                        backThrust = backThrusters.FindAll(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+                        foreThrust = thrusters[Base6Directions.Direction.Forward].FindAll(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+                        backThrust = thrusters[Base6Directions.Direction.Backward].FindAll(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
 
                         RetroCruiseControl(true);
                     }
@@ -184,9 +259,29 @@ namespace IngameScript
             {
                 SysReset();
                 RetroCruiseReset();
+                DisableThrustOverrides();
                 cruiseActive = false;
                 retro = false;
+                speedMatch = false;
                 optionalInfo = "cruise aborted";
+            }
+            else if (arg[0].Equals("match", StringComparison.OrdinalIgnoreCase))
+            {
+                if (wcApiActive)
+                {
+                    speedMatch = true;
+                }
+            }
+        }
+
+        private void DisableThrustOverrides()
+        {
+            foreach (var list in thrusters.Values)
+            {
+                foreach (var thruster in list)
+                {
+                    thruster.ThrustOverridePercentage = 0;
+                }
             }
         }
 
@@ -196,8 +291,8 @@ namespace IngameScript
             {
                 navRef.DampenersOverride = true;
             }
-            foreThrusters.ForEach(t => t.ThrustOverridePercentage = 0);
-            backThrusters.ForEach(t => t.Enabled = true);
+            DisableThrustOverrides();
+            thrusters[Base6Directions.Direction.Backward].ForEach(t => t.Enabled = true);
             gyros.ForEach(g => { g.Pitch = 0f; g.Roll = 0f; g.Yaw = 0f; g.GyroOverride = false; });
             cruiseActive = false;
             cruiseStage = 0;
@@ -213,8 +308,8 @@ namespace IngameScript
 
         void UpdateBlocks()
         {
-            foreThrusters.Clear();
-            backThrusters.Clear();
+            thrusters[Base6Directions.Direction.Forward].Clear();
+            thrusters[Base6Directions.Direction.Backward].Clear();
 
             var controllers = new List<IMyCockpit>();
             GridTerminalSystem.GetBlocksOfType(controllers, b => b.CustomName.ToLower().Contains(mainControllerTag.ToLower()) && b.IsSameConstructAs(Me));
@@ -223,29 +318,58 @@ namespace IngameScript
             else navRef = controllers.First();
 
 
-            var thrusters = new List<IMyThrust>();
+            var tempThrusters = new List<IMyThrust>();
             try
             {
-                GridTerminalSystem.GetBlockGroupWithName(forwardThrustGroupOverride).GetBlocksOfType(thrusters, b => b.IsSameConstructAs(Me));
+                GridTerminalSystem.GetBlockGroupWithName(forwardThrustGroupOverride).GetBlocksOfType(tempThrusters, b => b.IsSameConstructAs(Me));
             }
             catch
             {
-                GridTerminalSystem.GetBlocksOfType(thrusters, b => b.IsSameConstructAs(Me));
+                GridTerminalSystem.GetBlocksOfType(tempThrusters, b => b.IsSameConstructAs(Me));
             }
-            if (thrusters.Count == 0)
+            if (tempThrusters.Count == 0)
                 throw new Exception("bruh, this ship's got no thrusters!!");
-            foreach (var thruster in thrusters)
+            foreach (var thruster in tempThrusters)
             {
-                if (thruster.WorldMatrix.Forward == navRef.WorldMatrix.Backward)
-                    foreThrusters.Add(thruster);
-                if (thruster.WorldMatrix.Forward == navRef.WorldMatrix.Forward)
-                    backThrusters.Add(thruster);
+                switch (GetBlockDirection(thruster.WorldMatrix.Forward, navRef.WorldMatrix))
+                {
+                    case Base6Directions.Direction.Backward:
+                        thrusters[Base6Directions.Direction.Forward].Add(thruster); break;
+                    case Base6Directions.Direction.Forward:
+                        thrusters[Base6Directions.Direction.Backward].Add(thruster); break;
+                    case Base6Directions.Direction.Left:
+                        thrusters[Base6Directions.Direction.Right].Add(thruster); break;
+                    case Base6Directions.Direction.Right:
+                        thrusters[Base6Directions.Direction.Left].Add(thruster); break;
+                    case Base6Directions.Direction.Down:
+                        thrusters[Base6Directions.Direction.Up].Add(thruster); break;
+                    case Base6Directions.Direction.Up:
+                        thrusters[Base6Directions.Direction.Down].Add(thruster); break;
+                }
             }
 
             GridTerminalSystem.GetBlocksOfType(gyros, b => b.IsSameConstructAs(Me) && b.IsFunctional);
             gyro = gyros.First();
 
             pbLCD = Me.GetSurface(0);
+        }
+
+        public static Base6Directions.Direction GetBlockDirection(Vector3D vector, MatrixD refMatrix)
+        {
+            if (vector == refMatrix.Forward)
+                return Base6Directions.Direction.Forward;
+            else if (vector == refMatrix.Backward)
+                return Base6Directions.Direction.Backward;
+            else if (vector == refMatrix.Right)
+                return Base6Directions.Direction.Right;
+            else if (vector == refMatrix.Left)
+                return Base6Directions.Direction.Left;
+            else if (vector == refMatrix.Up)
+                return Base6Directions.Direction.Up;
+            else if (vector == refMatrix.Down)
+                return Base6Directions.Direction.Down;
+            else
+                throw new Exception("GetBlockDirection nocase");
         }
 
         StringBuilder pbOut = new StringBuilder();
@@ -265,6 +389,7 @@ namespace IngameScript
             pbOut.AppendLine($"Cruise Mode: {(useRetroCruise ? "RetroCruise" : "Normal")}");
             pbOut.AppendLine($"Retro: {retro}");
             pbOut.AppendLine($"RetroDecel: {retroDecel}");
+            pbOut.AppendLine($"Match: {speedMatch}");
             if (cruiseActive)
             {
                 if (useRetroCruise)
@@ -286,8 +411,12 @@ namespace IngameScript
             pbOut.AppendLine("Abort");
 
             pbOut.AppendLine($"\n-- Detected Blocks --");
-            pbOut.AppendLine($"- {foreThrusters.Count} Forward Thruster{(foreThrusters.Count != 1 ? "s" : "")}");
-            pbOut.AppendLine($"- {backThrusters.Count} Backward Thruster{(backThrusters.Count != 1 ? "s" : "")}");
+            pbOut.AppendLine($"- {thrusters[Base6Directions.Direction.Forward].Count} Forward Thrusters");
+            pbOut.AppendLine($"- {thrusters[Base6Directions.Direction.Backward].Count} Backward Thrusters");
+            pbOut.AppendLine($"- {thrusters[Base6Directions.Direction.Right].Count} Right Thrusters");
+            pbOut.AppendLine($"- {thrusters[Base6Directions.Direction.Left].Count} Left Thrusters");
+            pbOut.AppendLine($"- {thrusters[Base6Directions.Direction.Up].Count} Up Thrusters");
+            pbOut.AppendLine($"- {thrusters[Base6Directions.Direction.Down].Count} Down Thrusters");
             pbOut.AppendLine($"- {gyros.Count} Gyro{(gyros.Count != 1 ? "s" : "")}");
 
             pbOut.AppendLine("\n-- Runtime Information --");
