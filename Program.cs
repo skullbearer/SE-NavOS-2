@@ -28,12 +28,12 @@ namespace IngameScript
         Deceleration = 3,
     }
 
-    public enum NavModeEnum
+    public enum NavModeEnum //legacy: all future modes should be a class derived from ICruiseController
     {
         None = 0,
         Cruise = 1,
         Retro = 2, Retrograde = 2,
-        Prograde = 3,
+        //Prograde = 3,
         SpeedMatch = 4,
     }
 
@@ -55,6 +55,9 @@ namespace IngameScript
         //if empty or group doesn't exist uses all thrusters on the ship
         const string thrustGroup = "NavThrust";
 
+        public const double maxThrustOverridePercent = 1;
+
+        const string consoleLcdName = "consoleLcd";
         const string debugLcdName = "debugLcd";
 
         #endregion mdk preserve
@@ -94,10 +97,11 @@ namespace IngameScript
 
         public static StringBuilder debug = new StringBuilder();
         IMyTextPanel debugLcd;
+        IMyTextPanel consoleLcd;
 
         readonly DateTime bootTime;
         const string programName = "NavOS";
-        const string versionInfo = "2.5";
+        const string versionInfo = "2.6";
 
         IAimController aim;
         Profiler profiler;
@@ -139,21 +143,18 @@ namespace IngameScript
                 Update10?.Invoke();
 
                 WritePbOutput();
-
-                if (NavMode == NavModeEnum.SpeedMatch)
-                {
-                    SpeedMatch();
-                }
             }
 
-            if (NavMode == NavModeEnum.Cruise && cruise != null)
+            if ((NavMode == NavModeEnum.Cruise || NavMode == NavModeEnum.Retrograde || NavMode == NavModeEnum.SpeedMatch) && cruise != null)
             {
                 cruise.Run();
             }
         }
 
-        void SpeedMatch()
+        void SpeedMatchOld()
         {
+            controller.DampenersOverride = false;
+
             if (!wcApiActive)
             {
                 try { wcApiActive = wcApi.Activate(Me); }
@@ -162,49 +163,65 @@ namespace IngameScript
             
             if (wcApiActive)
             {
+                StringBuilder strb = new StringBuilder();
                 MyDetectedEntityInfo? target = wcApi.GetAiFocus(Me.CubeGrid.EntityId);
                 if (target.HasValue)
                 {
+                    strb.Append("target: ").AppendLine(target.Value.Name);
                     Vector3D relativeSpeed = target.Value.Velocity - controller.GetShipVelocities().LinearVelocity;
+                    float speed = (float)relativeSpeed.Length();
+                    float multi = Math.Min(speed / 1, 2); //placeholder: do something with acceleration
+                    relativeSpeed = relativeSpeed.Normalized();
+
+                    strb.Append("AngleForward ").AppendLine((Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Forward) * (180 / Math.PI)).ToString("0.0"));
                     if (Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Forward) > Math.PI / 2)
                     {
-                        float dot = Vector3.Dot(relativeSpeed, controller.WorldMatrix.Forward);
-                        Thrusters[Direction.Backward].ForEach(t => t.ThrustOverridePercentage = dot);
+                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Forward);
+                        Thrusters[Direction.Backward].ForEach(t => t.ThrustOverridePercentage = dot * multi);
                         Thrusters[Direction.Forward].ForEach(t => t.ThrustOverridePercentage = 0);
+                        strb.Append("Backward ").Append(dot.ToString("0.000000")).AppendLine();
                     }
                     else
                     {
-                        float dot = Vector3.Dot(relativeSpeed, controller.WorldMatrix.Backward);
-                        Thrusters[Direction.Forward].ForEach(t => t.ThrustOverridePercentage = dot);
+                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Backward);
+                        Thrusters[Direction.Forward].ForEach(t => t.ThrustOverridePercentage = dot * multi);
                         Thrusters[Direction.Backward].ForEach(t => t.ThrustOverridePercentage = 0);
+                        strb.Append("Forward ").Append(dot.ToString("0.000000")).AppendLine();
                     }
 
+                    strb.Append("AngleRight ").AppendLine((Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Right) * (180 / Math.PI)).ToString("0.0"));
                     if (Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Right) > Math.PI / 2)
                     {
-                        float dot = Vector3.Dot(relativeSpeed, controller.WorldMatrix.Right);
-                        Thrusters[  Direction.Left].ForEach(t => t.ThrustOverridePercentage = dot);
+                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Right);
+                        Thrusters[  Direction.Left].ForEach(t => t.ThrustOverridePercentage = dot * multi);
                         Thrusters[Direction.Right].ForEach(t => t.ThrustOverridePercentage = 0);
+                        strb.Append("Left ").Append(dot.ToString("0.000000")).AppendLine();
                     }
                     else
                     {
-                        float dot = Vector3.Dot(relativeSpeed, controller.WorldMatrix.Left);
-                        Thrusters[Direction.Right].ForEach(t => t.ThrustOverridePercentage = dot);
+                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Left);
+                        Thrusters[Direction.Right].ForEach(t => t.ThrustOverridePercentage = dot * multi);
                         Thrusters[Direction.Left].ForEach(t => t.ThrustOverridePercentage = 0);
+                        strb.Append("Right ").Append(dot.ToString("0.000000")).AppendLine();
                     }
 
+                    strb.Append("AngleUp ").AppendLine((Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Up) * (180 / Math.PI)).ToString("0.0"));
                     if (Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Up) > Math.PI / 2)
                     {
-                        float dot = Vector3.Dot(relativeSpeed, controller.WorldMatrix.Up);
-                        Thrusters[Direction.Down].ForEach(t => t.ThrustOverridePercentage = dot);
+                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Up);
+                        Thrusters[Direction.Down].ForEach(t => t.ThrustOverridePercentage = dot * multi);
                         Thrusters[Direction.Up].ForEach(t => t.ThrustOverridePercentage = 0);
+                        strb.Append("Down ").Append(dot.ToString("0.000000")).AppendLine();
                     }
                     else
                     {
-                        float dot = Vector3.Dot(relativeSpeed, controller.WorldMatrix.Down);
+                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Down);
                         Thrusters[Direction.Up].ForEach(t => t.ThrustOverridePercentage = dot);
                         Thrusters[Direction.Down].ForEach(t => t.ThrustOverridePercentage = 0);
+                        strb.Append("Up ").Append(dot.ToString("0.000000")).AppendLine();
                     }
                 }
+                optionalInfo = strb.ToString();
             }
         }
 
@@ -224,7 +241,6 @@ namespace IngameScript
         void HandleArgs(string argument)
         {
             string[] args = argument.ToLower().Split(' ');
-
 
             if (args[0] == "cruise" && args.Length >= 3 && IsNavIdle)
             {
@@ -252,7 +268,10 @@ namespace IngameScript
                     }
 
                     NavMode = NavModeEnum.Cruise;
-                    cruise = new RetroCruiseControl(target, desiredSpeed, aim, controller, gyros[0], Thrusters);
+                    cruise = new RetroCruiseControlScriptDampener(target, desiredSpeed, aim, controller, gyros[0], Thrusters)
+                    {
+                        thrustOverrideMultiplier = (float)maxThrustOverridePercent,
+                    };
                     cruise.CruiseCompleted += () => { cruise = null; NavMode = NavModeEnum.None; };
                 }
                 catch (Exception e)
@@ -273,6 +292,16 @@ namespace IngameScript
                 NavMode = NavModeEnum.None;
                 optionalInfo = "cruise aborted";
                 cruise?.Abort();
+            }
+            else if (args[0].Equals("match", StringComparison.OrdinalIgnoreCase))
+            {
+                NavMode = NavModeEnum.SpeedMatch;
+            }
+            else if (args[0].Equals("retro", StringComparison.OrdinalIgnoreCase))
+            {
+                NavMode = NavModeEnum.Cruise;
+                cruise = new Retrograde(aim, controller, gyros[0]);
+                cruise.CruiseCompleted += () => { cruise = null; NavMode = NavModeEnum.None; };
             }
         }
 
@@ -331,16 +360,17 @@ namespace IngameScript
 
             GridTerminalSystem.GetBlocksOfType(gyros, b => b.IsSameConstructAs(Me) && b.IsFunctional);
 
-            pbLCD = Me.GetSurface(0);
-
             try
             {
                 debugLcd = GridTerminalSystem.GetBlockWithName(debugLcdName) as IMyTextPanel;
             }
-            catch
-            {
+            catch { }
 
+            try
+            {
+                consoleLcd = GridTerminalSystem.GetBlockWithName(consoleLcdName) as IMyTextPanel;
             }
+            catch { }
         }
 
         public static Direction GetBlockDirection(Vector3D vector, MatrixD refMatrix)
@@ -363,7 +393,7 @@ namespace IngameScript
 
         StringBuilder pbOut = new StringBuilder();
         string optionalInfo = "";
-        IMyTextSurface pbLCD;
+
         void WritePbOutput()
         {
             //PB Output
@@ -396,6 +426,8 @@ namespace IngameScript
             pbOut.Append("\n-- Commands --\n");
             pbOut.Append("Cruise <Speed> <Distance>\n");
             pbOut.Append("Cruise <Speed> <X:Y:Z>\n");
+            pbOut.Append("Retro\n");
+            pbOut.Append("Match\n");
             pbOut.Append("Abort\n");
 
             pbOut.Append("\n-- Detected Blocks --\n");
@@ -414,7 +446,7 @@ namespace IngameScript
             pbOut.Append("\n\nWritten by StarCpt");
 
             Echo(pbOut.ToString());
-            pbLCD?.WriteText(pbOut);
+            consoleLcd?.WriteText(pbOut);
 
             pbOut.Clear();
         }
