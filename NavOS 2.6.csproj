@@ -39,7 +39,6 @@
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
     <Compile Include="CoreSystemsPbApi.cs" />
-    <Compile Include="RetroCruiseControlScriptDampener.cs" />
     <Compile Include="RetroCruiseControl.cs" />
     <Compile Include="ICruiseController.cs" />
     <Compile Include="IAimController.cs" />

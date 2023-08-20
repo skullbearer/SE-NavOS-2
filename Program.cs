@@ -81,7 +81,7 @@ namespace IngameScript
         }
         public bool IsNavIdle => NavMode == NavModeEnum.None;
 
-        private readonly Dictionary<Direction, List<IMyThrust>> Thrusters = new Dictionary<Direction, List<IMyThrust>>
+        private readonly Dictionary<Direction, List<IMyThrust>> thrusters = new Dictionary<Direction, List<IMyThrust>>
         {
             { Direction.Forward, new List<IMyThrust>() },
             { Direction.Backward, new List<IMyThrust>() },
@@ -145,83 +145,9 @@ namespace IngameScript
                 WritePbOutput();
             }
 
-            if ((NavMode == NavModeEnum.Cruise || NavMode == NavModeEnum.Retrograde || NavMode == NavModeEnum.SpeedMatch) && cruise != null)
+            if (NavMode > NavModeEnum.None && cruise != null)
             {
                 cruise.Run();
-            }
-        }
-
-        void SpeedMatchOld()
-        {
-            controller.DampenersOverride = false;
-
-            if (!wcApiActive)
-            {
-                try { wcApiActive = wcApi.Activate(Me); }
-                catch { wcApiActive = false; }
-            }
-            
-            if (wcApiActive)
-            {
-                StringBuilder strb = new StringBuilder();
-                MyDetectedEntityInfo? target = wcApi.GetAiFocus(Me.CubeGrid.EntityId);
-                if (target.HasValue)
-                {
-                    strb.Append("target: ").AppendLine(target.Value.Name);
-                    Vector3D relativeSpeed = target.Value.Velocity - controller.GetShipVelocities().LinearVelocity;
-                    float speed = (float)relativeSpeed.Length();
-                    float multi = Math.Min(speed / 1, 2); //placeholder: do something with acceleration
-                    relativeSpeed = relativeSpeed.Normalized();
-
-                    strb.Append("AngleForward ").AppendLine((Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Forward) * (180 / Math.PI)).ToString("0.0"));
-                    if (Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Forward) > Math.PI / 2)
-                    {
-                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Forward);
-                        Thrusters[Direction.Backward].ForEach(t => t.ThrustOverridePercentage = dot * multi);
-                        Thrusters[Direction.Forward].ForEach(t => t.ThrustOverridePercentage = 0);
-                        strb.Append("Backward ").Append(dot.ToString("0.000000")).AppendLine();
-                    }
-                    else
-                    {
-                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Backward);
-                        Thrusters[Direction.Forward].ForEach(t => t.ThrustOverridePercentage = dot * multi);
-                        Thrusters[Direction.Backward].ForEach(t => t.ThrustOverridePercentage = 0);
-                        strb.Append("Forward ").Append(dot.ToString("0.000000")).AppendLine();
-                    }
-
-                    strb.Append("AngleRight ").AppendLine((Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Right) * (180 / Math.PI)).ToString("0.0"));
-                    if (Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Right) > Math.PI / 2)
-                    {
-                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Right);
-                        Thrusters[  Direction.Left].ForEach(t => t.ThrustOverridePercentage = dot * multi);
-                        Thrusters[Direction.Right].ForEach(t => t.ThrustOverridePercentage = 0);
-                        strb.Append("Left ").Append(dot.ToString("0.000000")).AppendLine();
-                    }
-                    else
-                    {
-                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Left);
-                        Thrusters[Direction.Right].ForEach(t => t.ThrustOverridePercentage = dot * multi);
-                        Thrusters[Direction.Left].ForEach(t => t.ThrustOverridePercentage = 0);
-                        strb.Append("Right ").Append(dot.ToString("0.000000")).AppendLine();
-                    }
-
-                    strb.Append("AngleUp ").AppendLine((Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Up) * (180 / Math.PI)).ToString("0.0"));
-                    if (Vector3D.Angle(relativeSpeed, controller.WorldMatrix.Up) > Math.PI / 2)
-                    {
-                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Up);
-                        Thrusters[Direction.Down].ForEach(t => t.ThrustOverridePercentage = dot * multi);
-                        Thrusters[Direction.Up].ForEach(t => t.ThrustOverridePercentage = 0);
-                        strb.Append("Down ").Append(dot.ToString("0.000000")).AppendLine();
-                    }
-                    else
-                    {
-                        float dot = -Vector3.Dot(relativeSpeed, controller.WorldMatrix.Down);
-                        Thrusters[Direction.Up].ForEach(t => t.ThrustOverridePercentage = dot);
-                        Thrusters[Direction.Down].ForEach(t => t.ThrustOverridePercentage = 0);
-                        strb.Append("Up ").Append(dot.ToString("0.000000")).AppendLine();
-                    }
-                }
-                optionalInfo = strb.ToString();
             }
         }
 
@@ -242,7 +168,18 @@ namespace IngameScript
         {
             string[] args = argument.ToLower().Split(' ');
 
-            if (args[0] == "cruise" && args.Length >= 3 && IsNavIdle)
+            if (argument.ToLower().Contains("abort"))
+            {
+                Abort();
+                return;
+            }
+
+            if (!IsNavIdle)
+            {
+                return;
+            }
+
+            if (args.Length >= 3 && args[0].Equals("cruise", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {
@@ -268,46 +205,58 @@ namespace IngameScript
                     }
 
                     NavMode = NavModeEnum.Cruise;
-                    cruise = new RetroCruiseControlScriptDampener(target, desiredSpeed, aim, controller, gyros[0], Thrusters)
+                    cruise = new RetroCruiseControl(target, desiredSpeed, aim, controller, gyros[0], thrusters)
                     {
                         thrustOverrideMultiplier = (float)maxThrustOverridePercent,
                     };
-                    cruise.CruiseCompleted += () => { cruise = null; NavMode = NavModeEnum.None; };
+                    cruise.CruiseCompleted += CruiseCompleted;
                 }
                 catch (Exception e)
                 {
                     optionalInfo = e.ToString();
                 }
             }
-            //else if (args[0].Equals("match", StringComparison.OrdinalIgnoreCase) && IsNavIdle)
-            //{
-            //    if (wcApiActive)
-            //    {
-            //        NavMode = NavModeEnum.SpeedMatch;
-            //    }
-            //}
-            else if (argument.ToLower().Contains("abort"))
-            {
-                DisableThrustOverrides();
-                NavMode = NavModeEnum.None;
-                optionalInfo = "cruise aborted";
-                cruise?.Abort();
-            }
             else if (args[0].Equals("match", StringComparison.OrdinalIgnoreCase))
             {
+                if (!wcApiActive)
+                    return;
+                var target = wcApi.GetAiFocus(Me.CubeGrid.EntityId);
+                if ((target?.EntityId ?? 0) == 0)
+                    return;
                 NavMode = NavModeEnum.SpeedMatch;
+                cruise = new SpeedMatch(target.Value.EntityId, wcApi, controller, thrusters, Me)
+                {
+                    thrustOverrideMulti = (float)maxThrustOverridePercent,
+                };
+                cruise.CruiseCompleted += CruiseCompleted;
             }
             else if (args[0].Equals("retro", StringComparison.OrdinalIgnoreCase))
             {
                 NavMode = NavModeEnum.Cruise;
                 cruise = new Retrograde(aim, controller, gyros[0]);
-                cruise.CruiseCompleted += () => { cruise = null; NavMode = NavModeEnum.None; };
+                cruise.CruiseCompleted += CruiseCompleted;
             }
+        }
+
+        private void Abort()
+        {
+            DisableThrustOverrides();
+            DisableGyroOverrides();
+            optionalInfo = "cruise aborted";
+            cruise?.Abort();
+            cruise = null;
+            NavMode = NavModeEnum.None;
+        }
+
+        private void CruiseCompleted()
+        {
+            cruise = null;
+            NavMode = NavModeEnum.None;
         }
 
         private void DisableThrustOverrides()
         {
-            foreach (var list in Thrusters.Values)
+            foreach (var list in thrusters.Values)
             {
                 foreach (var thruster in list)
                 {
@@ -316,10 +265,21 @@ namespace IngameScript
             }
         }
 
+        private void DisableGyroOverrides()
+        {
+            foreach (var gyro in gyros)
+            {
+                gyro.GyroOverride = false;
+                gyro.Pitch = 0;
+                gyro.Yaw = 0;
+                gyro.Roll = 0;
+            }
+        }
+
         void UpdateBlocks()
         {
-            Thrusters[Direction.Forward].Clear();
-            Thrusters[Direction.Backward].Clear();
+            thrusters[Direction.Forward].Clear();
+            thrusters[Direction.Backward].Clear();
 
             var controllers = new List<IMyCockpit>();
             GridTerminalSystem.GetBlocksOfType(controllers, b => b.CustomName.ToLower().Contains(shipControllerTag.ToLower()) && b.IsSameConstructAs(Me));
@@ -344,17 +304,17 @@ namespace IngameScript
                 switch (GetBlockDirection(thruster.WorldMatrix.Forward, controller.WorldMatrix))
                 {
                     case Direction.Backward:
-                        Thrusters[Direction.Forward].Add(thruster); break;
+                        thrusters[Direction.Forward].Add(thruster); break;
                     case Direction.Forward:
-                        Thrusters[Direction.Backward].Add(thruster); break;
+                        thrusters[Direction.Backward].Add(thruster); break;
                     case Direction.Left:
-                        Thrusters[Direction.Right].Add(thruster); break;
+                        thrusters[Direction.Right].Add(thruster); break;
                     case Direction.Right:
-                        Thrusters[Direction.Left].Add(thruster); break;
+                        thrusters[Direction.Left].Add(thruster); break;
                     case Direction.Down:
-                        Thrusters[Direction.Up].Add(thruster); break;
+                        thrusters[Direction.Up].Add(thruster); break;
                     case Direction.Up:
-                        Thrusters[Direction.Down].Add(thruster); break;
+                        thrusters[Direction.Down].Add(thruster); break;
                 }
             }
 
@@ -401,27 +361,13 @@ namespace IngameScript
             TimeSpan upTime = DateTime.UtcNow - bootTime;
             pbOut.Append("\nUptime: ").AppendLine(SecondsToDuration(upTime.TotalSeconds)).AppendLine();
 
-            pbOut.Append(optionalInfo);
+            pbOut.AppendLine(optionalInfo);
 
             pbOut.Append("\n-- Nav Info --");
             pbOut.Append("\nNavMode: ").Append(NavMode.ToString());
             pbOut.Append("\nDebug: ").Append(debugLcd != null).AppendLine();
 
             cruise?.AppendStatus(pbOut);
-
-            //if (NavMode == NavModeEnum.Cruise)
-            //{
-            //    if (useRetroCruise)
-            //    {
-            //        pbOut.AppendLine($"Offset: {retroOffset}");
-            //    }
-            //    pbOut.AppendLine($"Stage: {cruiseStage}");
-            //    pbOut.AppendLine($"ETA: {SecondsToDuration(ETA)}");
-            //    pbOut.AppendLine($"Remaining Dist: {remainingDist:0}");
-            //    pbOut.AppendLine($"Speed: {cruiseSpeed}");
-            //    pbOut.AppendLine($"Dist: {cruiseDist}");
-            //    pbOut.AppendLine($"Accuracy: {GetAccuracy(aimDir):f7}");
-            //}
 
             pbOut.Append("\n-- Commands --\n");
             pbOut.Append("Cruise <Speed> <Distance>\n");
@@ -431,19 +377,19 @@ namespace IngameScript
             pbOut.Append("Abort\n");
 
             pbOut.Append("\n-- Detected Blocks --\n");
-            pbOut.Append(Thrusters[Direction.Forward].Count).Append(" Forward Thrusters\n");
-            pbOut.Append(Thrusters[Direction.Backward].Count).Append(" Backward Thrusters\n");
-            pbOut.Append(Thrusters[Direction.Right].Count).Append(" Right Thrusters\n");
-            pbOut.Append(Thrusters[Direction.Left].Count).Append(" Left Thrusters\n");
-            pbOut.Append(Thrusters[Direction.Up].Count).Append(" Up Thrusters\n");
-            pbOut.Append(Thrusters[Direction.Down].Count).Append(" Down Thrusters\n");
+            pbOut.Append(thrusters[Direction.Forward].Count).Append(" Forward Thrusters\n");
+            pbOut.Append(thrusters[Direction.Backward].Count).Append(" Backward Thrusters\n");
+            pbOut.Append(thrusters[Direction.Right].Count).Append(" Right Thrusters\n");
+            pbOut.Append(thrusters[Direction.Left].Count).Append(" Left Thrusters\n");
+            pbOut.Append(thrusters[Direction.Up].Count).Append(" Up Thrusters\n");
+            pbOut.Append(thrusters[Direction.Down].Count).Append(" Down Thrusters\n");
             pbOut.Append(gyros.Count).Append(" Gyros\n");
 
             pbOut.Append("\n-- Runtime Information --");
             pbOut.Append("\nLast Runtime: ").Append(Runtime.LastRunTimeMs);
             pbOut.Append("\nAverage Runtime: ").Append(profiler.RunningAverageMs.ToString("0.0000"));
             pbOut.Append("\nMax Runtime: ").Append(profiler.MaxRuntimeMsFast);
-            pbOut.Append("\n\nWritten by StarCpt");
+            //pbOut.Append("\n\nNavOS by StarCpt");
 
             Echo(pbOut.ToString());
             consoleLcd?.WriteText(pbOut);

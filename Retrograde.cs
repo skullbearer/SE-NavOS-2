@@ -24,23 +24,17 @@ namespace IngameScript
 
         public double terminateSpeed = 5;
 
-        private int counter = 0;
-
         public Retrograde(IAimController aimControl, IMyShipController controller, IMyGyro gyro)
         {
             this.AimControl = aimControl;
             this.Controller = controller;
             this.Gyro = gyro;
+
+            gyro.Enabled = true;
         }
 
         public void Run()
         {
-            //counter++;
-            //if (counter % valueUpdateInterval == 0)
-            //{
-            //
-            //}
-
             var shipVelocity = Controller.GetShipVelocities().LinearVelocity;
             AimControl.Orient(-shipVelocity, Gyro, Controller.WorldMatrix);
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using VRageMath;
 
@@ -16,9 +17,13 @@ namespace IngameScript
         public IMyShipController ShipController { get; set; }
         public Dictionary<Direction, List<IMyThrust>> Thrusters { get; set; }
 
+        public float thrustOverrideMulti = 1; //thrust override multiplier
+
+        public double relativeSpeedThreshold = 0.01;//stop dampening under this relative speed
+
         private long targetEntityId;
         private WcPbApi wcApi;
-        private int counter = 0;
+        private IMyTerminalBlock pb;
 
         private float forwardAccel;
         private float backwardAccel;
@@ -27,23 +32,36 @@ namespace IngameScript
         private float upAccel;
         private float downAccel;
 
-        public const float overrideMulti = (float)Program.maxThrustOverridePercent;
+        private int counter = 0;
+        private Dictionary<MyDetectedEntityInfo, float> threats = new Dictionary<MyDetectedEntityInfo, float>();
+        private Vector3D relativeVelocity;
+
+        private MyDetectedEntityInfo? target;
 
         public SpeedMatch(
             long targetEntityId,
             WcPbApi wcApi,
             IMyShipController shipController,
-            Dictionary<Direction, List<IMyThrust>> thrusters)
+            Dictionary<Direction, List<IMyThrust>> thrusters,
+            IMyTerminalBlock programmableBlock)
         {
             this.targetEntityId = targetEntityId;
             this.wcApi = wcApi;
             this.ShipController = shipController;
             this.Thrusters = thrusters;
+            this.pb = programmableBlock;
         }
 
         public void AppendStatus(StringBuilder strb)
         {
-
+            strb.AppendLine("-- SpeedMatch Status --");
+            strb.Append("Target: ").Append(targetEntityId).AppendLine();
+            if (target.HasValue)
+            {
+                strb.Append("Name: ").AppendLine(target.Value.Name);
+                strb.Append("RelativeVelocity: ").AppendLine(relativeVelocity.Length().ToString("0.0"));
+                //maybe add some more info about the target?
+            }
         }
 
         public void Run()
@@ -51,67 +69,58 @@ namespace IngameScript
             counter++;
             if (counter % 10 == 0)
             {
-                MyDetectedEntityInfo? target;
+                ShipController.DampenersOverride = false;
+
+                target = null;
+
                 try
                 {
-                    target = wcApi.GetAiFocus(ShipController.CubeGrid.EntityId);
+                    //target = wcApi.GetAiFocus(ShipController.CubeGrid.EntityId);
+
+                    //support changing main target after running speedmatch
+                    wcApi.GetSortedThreats(pb, threats);
+                    foreach (var threat in threats.Keys)
+                    {
+                        if (threat.EntityId == targetEntityId)
+                        {
+                            target = threat;
+                            break;
+                        }
+                    }
                 }
-                catch
-                {
-                    target = null;
-                }
+                catch { }
 
-                if (!target.HasValue || target.Value.EntityId != targetEntityId)
-                {
-                    ResetThrustOverrides();
-                    return;
-                }
-
-                UpdateThrust();
-
-                Vector3D relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
-                Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
-                
-                float forward = 0;
-                float backward = 0;
-                float right = 0;
-                float left = 0;
-                float up = 0;
-                float down = 0;
-
-                if (relativeVelocityLocal.Z < 0)
-                    forward = Math.Min(-relativeVelocityLocal.Z / forwardAccel, 1) * overrideMulti;
-                else if (relativeVelocityLocal.Z > 0)
-                    backward = Math.Min(relativeVelocityLocal.Z / backwardAccel, 1) * overrideMulti;
-
-                if (relativeVelocityLocal.X < 0)
-                    right = Math.Min(-relativeVelocityLocal.X / rightAccel, 1) * overrideMulti;
-                else if (relativeVelocityLocal.X > 0)
-                    left = Math.Min(relativeVelocityLocal.X / leftAccel, 1) * overrideMulti;
-
-                if (relativeVelocityLocal.Y < 0)
-                    up = Math.Min(-relativeVelocityLocal.Y / upAccel, 1) * overrideMulti;
-                else if (relativeVelocityLocal.Y > 0)
-                    down = Math.Min(relativeVelocityLocal.Y / downAccel, 1) * overrideMulti;
-
-                foreach (var thrust in Thrusters[Direction.Forward])
-                    thrust.ThrustOverridePercentage = forward;
-
-                foreach (var thrust in Thrusters[Direction.Backward])
-                    thrust.ThrustOverridePercentage = backward;
-
-                foreach (var thrust in Thrusters[Direction.Right])
-                    thrust.ThrustOverridePercentage = right;
-
-                foreach (var thrust in Thrusters[Direction.Left])
-                    thrust.ThrustOverridePercentage = left;
-
-                foreach (var thrust in Thrusters[Direction.Up])
-                    thrust.ThrustOverridePercentage = up;
-
-                foreach (var thrust in Thrusters[Direction.Down])
-                    thrust.ThrustOverridePercentage = down;
+                UpdateThrustAccel();
             }
+
+            if (!target.HasValue)
+            {
+                ResetThrustOverrides();
+                return;
+            }
+
+            relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
+            Vector3 relativeVelocityLocal = -Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
+
+            float backward = relativeVelocityLocal.Z < relativeSpeedThreshold ? Math.Min(-relativeVelocityLocal.Z / backwardAccel, 1) * thrustOverrideMulti : 0;
+            float forward = relativeVelocityLocal.Z > relativeSpeedThreshold ? Math.Min(relativeVelocityLocal.Z / forwardAccel, 1) * thrustOverrideMulti : 0;
+            float right = relativeVelocityLocal.X < relativeSpeedThreshold ? Math.Min(-relativeVelocityLocal.X / rightAccel, 1) * thrustOverrideMulti : 0;
+            float left = relativeVelocityLocal.X > relativeSpeedThreshold ? Math.Min(relativeVelocityLocal.X / leftAccel, 1) * thrustOverrideMulti : 0;
+            float up = relativeVelocityLocal.Y < relativeSpeedThreshold ? Math.Min(-relativeVelocityLocal.Y / upAccel, 1) * thrustOverrideMulti : 0;
+            float down = relativeVelocityLocal.Y > relativeSpeedThreshold ? Math.Min(relativeVelocityLocal.Y / downAccel, 1) * thrustOverrideMulti : 0;
+
+            foreach (var thrust in Thrusters[Direction.Forward])
+                thrust.ThrustOverridePercentage = forward;
+            foreach (var thrust in Thrusters[Direction.Backward])
+                thrust.ThrustOverridePercentage = backward;
+            foreach (var thrust in Thrusters[Direction.Right])
+                thrust.ThrustOverridePercentage = right;
+            foreach (var thrust in Thrusters[Direction.Left])
+                thrust.ThrustOverridePercentage = left;
+            foreach (var thrust in Thrusters[Direction.Up])
+                thrust.ThrustOverridePercentage = up;
+            foreach (var thrust in Thrusters[Direction.Down])
+                thrust.ThrustOverridePercentage = down;
         }
 
         private void ResetThrustOverrides()
@@ -125,7 +134,7 @@ namespace IngameScript
             }
         }
 
-        private void UpdateThrust()
+        private void UpdateThrustAccel()
         {
             float gridMass = ShipController.CalculateShipMass().PhysicalMass;
 
