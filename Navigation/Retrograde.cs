@@ -8,19 +8,14 @@ using VRageMath;
 
 namespace IngameScript
 {
-    internal class Retrograde : ICruiseController
+    public class Retrograde : ICruiseController
     {
-        public event Action CruiseCompleted;
+        public event CruiseTerminateEventDelegate CruiseTerminated = delegate { };
 
-        public string Name => nameof(Retrograde);
+        public virtual string Name => nameof(Retrograde);
         public IAimController AimControl { get; set; }
         public IMyShipController Controller { get; set; }
         public IMyGyro Gyro { get; set; }
-
-        /// <summary>
-        /// How often to update things like ship velocity, desireddirection ,etc
-        /// </summary>
-        public int valueUpdateInterval = 10;
 
         public double terminateSpeed = 5;
 
@@ -33,29 +28,47 @@ namespace IngameScript
             gyro.Enabled = true;
         }
 
-        public void Run()
+        public virtual void AppendStatus(StringBuilder strb)
+        {
+
+        }
+
+        public virtual void Run()
         {
             var shipVelocity = Controller.GetShipVelocities().LinearVelocity;
-            AimControl.Orient(-shipVelocity, Gyro, Controller.WorldMatrix);
+            Orient(-shipVelocity);
 
             if (shipVelocity.LengthSquared() <= terminateSpeed * terminateSpeed)
             {
-                Abort();
-                CruiseCompleted?.Invoke();
+                ResetGyroOverride();
+
+                RaiseCruiseTerminated(this, $"Speed is less than {terminateSpeed:0.#} m/s");
             }
         }
 
-        public void AppendStatus(StringBuilder strb)
+        protected void Orient(Vector3D forward)
         {
-
+            AimControl.Orient(forward, Gyro, Controller.WorldMatrix);
         }
 
-        public void Abort()
+        protected void ResetGyroOverride()
         {
             Gyro.Pitch = 0;
             Gyro.Yaw = 0;
             Gyro.Roll = 0;
             Gyro.GyroOverride = false;
+        }
+
+        public virtual void Abort()
+        {
+            ResetGyroOverride();
+
+            RaiseCruiseTerminated(this, $"Aborted");
+        }
+
+        protected void RaiseCruiseTerminated(ICruiseController source, string reason)
+        {
+            CruiseTerminated.Invoke(source, reason);
         }
     }
 }

@@ -38,9 +38,14 @@
   <Import Project="MDK/MDK.options.props" />
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
+    <Compile Include="Config.cs" />
+    <Compile Include="Commands.cs" />
     <Compile Include="CoreSystemsPbApi.cs" />
-    <Compile Include="RetroCruiseControl.cs" />
-    <Compile Include="ICruiseController.cs" />
+    <Compile Include="Navigation\Retroburn.cs" />
+    <Compile Include="HashCodeHelpers.cs" />
+    <Compile Include="Navigation\Prograde.cs" />
+    <Compile Include="Navigation\RetroCruiseControl.cs" />
+    <Compile Include="Navigation\ICruiseController.cs" />
     <Compile Include="IAimController.cs" />
     <Compile Include="JitAim.cs" />
     <Compile Include="MathEx.cs" />
@@ -56,8 +61,9 @@
     <AdditionalFiles Include="Instructions.readme" />
     <AdditionalFiles Include="thumb.png" />
     <AdditionalFiles Include="MDK\whitelist.cache" />
-    <Compile Include="Retrograde.cs" />
-    <Compile Include="SpeedMatch.cs" />
+    <Compile Include="Navigation\Retrograde.cs" />
+    <Compile Include="Navigation\SpeedMatch.cs" />
+    <Compile Include="VersionInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

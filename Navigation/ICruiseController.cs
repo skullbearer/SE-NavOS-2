@@ -6,9 +6,18 @@ using System.Threading.Tasks;
 
 namespace IngameScript
 {
+    public enum CruiseTerminateReason
+    {
+        Completed = 1,
+        Aborted = 2,
+        Other = 3,
+    }
+
+    public delegate void CruiseTerminateEventDelegate(ICruiseController source, string reason);
+
     public interface ICruiseController
     {
-        event Action CruiseCompleted;
+        event CruiseTerminateEventDelegate CruiseTerminated;
         string Name { get; }
         void AppendStatus(StringBuilder strb);
         void Run();

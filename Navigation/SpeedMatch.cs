@@ -11,7 +11,7 @@ namespace IngameScript
 {
     internal class SpeedMatch : ICruiseController
     {
-        public event Action CruiseCompleted;
+        public event CruiseTerminateEventDelegate CruiseTerminated;
 
         public string Name => nameof(SpeedMatch);
         public IMyShipController ShipController { get; set; }
@@ -55,11 +55,11 @@ namespace IngameScript
         public void AppendStatus(StringBuilder strb)
         {
             strb.AppendLine("-- SpeedMatch Status --");
-            strb.Append("Target: ").Append(targetEntityId).AppendLine();
+            strb.Append("Target: ").Append(targetEntityId);
             if (target.HasValue)
             {
-                strb.Append("Name: ").AppendLine(target.Value.Name);
-                strb.Append("RelativeVelocity: ").AppendLine(relativeVelocity.Length().ToString("0.0"));
+                strb.Append("\nName: ").Append(target.Value.Name);
+                strb.Append("\nRelativeVelocity: ").AppendLine(relativeVelocity.Length().ToString("0.0"));
                 //maybe add some more info about the target?
             }
         }
@@ -149,6 +149,8 @@ namespace IngameScript
         public void Abort()
         {
             ResetThrustOverrides();
+
+            CruiseTerminated.Invoke(this, "Aborted");
         }
     }
 }

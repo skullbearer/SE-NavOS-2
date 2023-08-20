@@ -23,9 +23,9 @@ namespace IngameScript
         const double DegToRadMulti = Math.PI / 180;
         const double RadToDegMulti = 180 / Math.PI;
 
-        public event Action CruiseCompleted = delegate { };
+        public event CruiseTerminateEventDelegate CruiseTerminated = delegate { };
 
-        public string Name => "RetroCruiseScriptDampenerNew";
+        public string Name => nameof(RetroCruiseControl);
         public RetroCruiseStage Stage
         {
             get { return _stage; }
@@ -238,6 +238,9 @@ namespace IngameScript
                 SetDampenerState(false);
 
                 //todo: make the ship stop using retroDecel
+
+                //or cancel out current sideways velocity
+                //and backwards velocity (moving away from target) if any
 
                 Stage = RetroCruiseStage.OrientAndAccelerate;
             }
@@ -458,7 +461,7 @@ namespace IngameScript
 
             SetDampenerState(true);
 
-            CruiseCompleted.Invoke();
+            CruiseTerminated.Invoke(this, "Destination Reached");
         }
 
         public void Abort()
@@ -470,7 +473,7 @@ namespace IngameScript
 
             Stage = RetroCruiseStage.Aborted;
 
-            CruiseCompleted.Invoke();
+            CruiseTerminated.Invoke(this, "Aborted");
         }
     }
 }
