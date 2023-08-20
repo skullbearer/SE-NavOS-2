@@ -35,17 +35,27 @@ namespace IngameScript
                 return;
             }
 
+            bool match = false;
+
             if (args.Length >= 3 && args[0].Equals("cruise"))
             {
                 CommandCruise(args);
+                match = true;
             }
             else if (args[0].Equals("retro") || args[0].Equals("retrograde"))
             {
                 CommandRetrograde();
+                match = true;
             }
             else if (args[0].Equals("match") || args[0].Equals("speedmatch"))
             {
                 CommandSpeedMatch();
+                match = true;
+            }
+
+            if (match)
+            {
+                optionalInfo = "";
             }
         }
 

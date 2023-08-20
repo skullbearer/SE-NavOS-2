@@ -79,7 +79,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.7 dev";
+        public const string versionStr = "2.7 beta";
         public static VersionInfo versionInfo = new VersionInfo(2, 7, 0);
 
         private Config config;
@@ -302,7 +302,9 @@ Reload (the config)
 
             pbOut.Append("\n-- Nav Info --");
             pbOut.Append("\nNavMode: ").Append(NavMode.ToString());
-            pbOut.Append("\nDebug: ").Append(debugLcd != null).AppendLine();
+            pbOut.Append("\nDebug: ").Append(debugLcd != null);
+            pbOut.AppendLine();
+            pbOut.AppendLine();
 
             cruiseController?.AppendStatus(pbOut);
 

@@ -25,12 +25,12 @@ namespace IngameScript
         private WcPbApi wcApi;
         private IMyTerminalBlock pb;
 
-        private float forwardAccel;
-        private float backwardAccel;
-        private float rightAccel;
-        private float leftAccel;
-        private float upAccel;
-        private float downAccel;
+        private float forwardThrust;
+        private float backwardThrust;
+        private float rightThrust;
+        private float leftThrust;
+        private float upThrust;
+        private float downThrust;
 
         private int counter = 0;
         private Dictionary<MyDetectedEntityInfo, float> threats = new Dictionary<MyDetectedEntityInfo, float>();
@@ -100,27 +100,28 @@ namespace IngameScript
             }
 
             relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
-            Vector3 relativeVelocityLocal = -Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
+            Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
+            Vector3 thrustAmount = -relativeVelocityLocal * 2 * ShipController.CalculateShipMass().PhysicalMass;
 
-            float backward = relativeVelocityLocal.Z < relativeSpeedThreshold ? Math.Min(-relativeVelocityLocal.Z / backwardAccel, 1) * thrustOverrideMulti : 0;
-            float forward = relativeVelocityLocal.Z > relativeSpeedThreshold ? Math.Min(relativeVelocityLocal.Z / forwardAccel, 1) * thrustOverrideMulti : 0;
-            float right = relativeVelocityLocal.X < relativeSpeedThreshold ? Math.Min(-relativeVelocityLocal.X / rightAccel, 1) * thrustOverrideMulti : 0;
-            float left = relativeVelocityLocal.X > relativeSpeedThreshold ? Math.Min(relativeVelocityLocal.X / leftAccel, 1) * thrustOverrideMulti : 0;
-            float up = relativeVelocityLocal.Y < relativeSpeedThreshold ? Math.Min(-relativeVelocityLocal.Y / upAccel, 1) * thrustOverrideMulti : 0;
-            float down = relativeVelocityLocal.Y > relativeSpeedThreshold ? Math.Min(relativeVelocityLocal.Y / downAccel, 1) * thrustOverrideMulti : 0;
+            float backward = thrustAmount.Z < 0 ? Math.Min(-thrustAmount.Z, backwardThrust * thrustOverrideMulti) : 0;
+            float forward = thrustAmount.Z > 0 ? Math.Min(thrustAmount.Z, forwardThrust * thrustOverrideMulti) : 0;
+            float right = thrustAmount.X < 0 ? Math.Min(-thrustAmount.X, rightThrust * thrustOverrideMulti) : 0;
+            float left = thrustAmount.X > 0 ? Math.Min(thrustAmount.X, leftThrust * thrustOverrideMulti) : 0;
+            float up = thrustAmount.Y < 0 ? Math.Min(-thrustAmount.Y, upThrust * thrustOverrideMulti) : 0;
+            float down = thrustAmount.Y > 0 ? Math.Min(thrustAmount.Y, downThrust * thrustOverrideMulti) : 0;
 
             foreach (var thrust in Thrusters[Direction.Forward])
-                thrust.ThrustOverridePercentage = forward;
+                thrust.ThrustOverride = forward;
             foreach (var thrust in Thrusters[Direction.Backward])
-                thrust.ThrustOverridePercentage = backward;
+                thrust.ThrustOverride = backward;
             foreach (var thrust in Thrusters[Direction.Right])
-                thrust.ThrustOverridePercentage = right;
+                thrust.ThrustOverride = right;
             foreach (var thrust in Thrusters[Direction.Left])
-                thrust.ThrustOverridePercentage = left;
+                thrust.ThrustOverride = left;
             foreach (var thrust in Thrusters[Direction.Up])
-                thrust.ThrustOverridePercentage = up;
+                thrust.ThrustOverride = up;
             foreach (var thrust in Thrusters[Direction.Down])
-                thrust.ThrustOverridePercentage = down;
+                thrust.ThrustOverride = down;
         }
 
         private void ResetThrustOverrides()
@@ -136,14 +137,12 @@ namespace IngameScript
 
         private void UpdateThrustAccel()
         {
-            float gridMass = ShipController.CalculateShipMass().PhysicalMass;
-
-            forwardAccel = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust) / gridMass;
-            backwardAccel = Thrusters[Direction.Backward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust) / gridMass;
-            rightAccel = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust) / gridMass;
-            leftAccel = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust) / gridMass;
-            upAccel = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust) / gridMass;
-            downAccel = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust) / gridMass;
+            forwardThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            backwardThrust = Thrusters[Direction.Backward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            rightThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            leftThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            upThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            downThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
         }
 
         public void Abort()
