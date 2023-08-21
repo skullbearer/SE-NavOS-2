@@ -100,6 +100,7 @@ namespace IngameScript
             catch { wcApiActive = false; }
 
             UpdateBlocks();
+            Abort();
         }
 
         private void SaveCustomDataConfig()
