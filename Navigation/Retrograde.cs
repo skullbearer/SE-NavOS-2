@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using VRageMath;
 
-namespace IngameScript
+namespace IngameScript.Navigation
 {
     public class Retrograde : ICruiseController
     {

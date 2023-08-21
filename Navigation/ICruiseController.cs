@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IngameScript
+namespace IngameScript.Navigation
 {
     public enum CruiseTerminateReason
     {

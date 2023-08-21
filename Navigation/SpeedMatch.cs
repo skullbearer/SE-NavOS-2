@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using VRageMath;
 
-namespace IngameScript
+namespace IngameScript.Navigation
 {
     internal class SpeedMatch : ICruiseController
     {

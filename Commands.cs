@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IngameScript.Navigation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -45,6 +46,11 @@ namespace IngameScript
             else if (args[0].Equals("retro") || args[0].Equals("retrograde"))
             {
                 CommandRetrograde();
+                match = true;
+            }
+            else if (args[0].Equals("prograde"))
+            {
+                CommandPrograde();
                 match = true;
             }
             else if (args[0].Equals("match") || args[0].Equals("speedmatch"))
@@ -104,8 +110,15 @@ namespace IngameScript
 
         private void CommandRetrograde()
         {
-            NavMode = NavModeEnum.Cruise;
+            NavMode = NavModeEnum.Retrograde;
             cruiseController = new Retrograde(aimController, controller, gyros[0]);
+            cruiseController.CruiseTerminated += CruiseTerminated;
+        }
+
+        private void CommandPrograde()
+        {
+            NavMode = NavModeEnum.Prograde;
+            cruiseController = new Prograde(aimController, controller, gyros[0]);
             cruiseController.CruiseTerminated += CruiseTerminated;
         }
 
