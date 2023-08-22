@@ -81,7 +81,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.8 dev2";
+        public const string versionStr = "2.8";
         public static VersionInfo versionInfo = new VersionInfo(2, 8, 0);
 
         private Config config;
@@ -101,7 +101,7 @@ namespace IngameScript
             catch { wcApiActive = false; }
 
             UpdateBlocks();
-            Abort(true);
+            Abort(false);
 
             TryRestoreNavState();
         }
@@ -189,10 +189,6 @@ namespace IngameScript
                 config = Config.Default;
                 SaveCustomDataConfig();
             }
-            else
-            {
-                SaveCustomDataConfig();
-            }
         }
 
         public void Main(string argument, UpdateType updateSource)
@@ -221,14 +217,14 @@ namespace IngameScript
             }
         }
 
-        private void Abort(bool constructor = false)
+        private void Abort(bool saveconfig = true)
         {
             cruiseController?.Abort();
 
             DisableThrustOverrides();
             DisableGyroOverrides();
 
-            if (!constructor)
+            if (saveconfig)
             {
                 config.PersistStateData = "";
                 SaveCustomDataConfig();
@@ -367,6 +363,7 @@ namespace IngameScript
 -- Commands --
 Cruise <Speed> <distance>
 Cruise <Speed> <X:Y:Z>
+Cruise <Speed> <GPS>
 Retro/Retrograde
 Match
 Abort

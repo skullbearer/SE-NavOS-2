@@ -27,7 +27,7 @@ namespace IngameScript
 
             if (args[0].Equals("reload"))
             {
-                Abort();
+                Abort(false);
                 CommandReloadConfig();
             }
 
@@ -40,7 +40,7 @@ namespace IngameScript
 
             if (args.Length >= 3 && args[0].Equals("cruise"))
             {
-                CommandCruise(args);
+                CommandCruise(args, argument);
                 cmdMatched = true;
             }
             else if (args[0].Equals("retro") || args[0].Equals("retrograde"))
@@ -66,7 +66,7 @@ namespace IngameScript
 
             if (cmdMatched)
             {
-                optionalInfo = "";
+                //optionalInfo = "";
             }
         }
 
@@ -75,7 +75,7 @@ namespace IngameScript
             LoadCustomDataConfig();
         }
 
-        private void CommandCruise(string[] args)
+        private void CommandCruise(string[] args, string argument)
         {
             try
             {
@@ -85,9 +85,20 @@ namespace IngameScript
                 desiredSpeed = double.Parse(args[1]);
 
                 double result;
-                if (double.TryParse(args[2], out result))
+                bool distanceCruise;
+                if (distanceCruise = double.TryParse(args[2], out result))
                 {
                     target = controller.GetPosition() + (controller.WorldMatrix.Forward * result);
+                }
+                else if (args[2].StartsWith("gps:", StringComparison.OrdinalIgnoreCase))
+                {
+                    string[] coords = argument.Substring(argument.IndexOf("GPS:")).Split(':');
+
+                    double x = double.Parse(coords[2]);
+                    double y = double.Parse(coords[3]);
+                    double z = double.Parse(coords[4]);
+
+                    target = new Vector3D(x, y, z);
                 }
                 else
                 {
@@ -137,6 +148,7 @@ namespace IngameScript
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retrograde}";
             SaveCustomDataConfig();
+            optionalInfo = "";
         }
 
         private void CommandRetroburn()
@@ -146,6 +158,7 @@ namespace IngameScript
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retroburn}";
             SaveCustomDataConfig();
+            optionalInfo = "";
         }
 
         private void CommandPrograde()
@@ -155,6 +168,7 @@ namespace IngameScript
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Prograde}";
             SaveCustomDataConfig();
+            optionalInfo = "";
         }
 
         private void CommandSpeedMatch()
@@ -170,6 +184,7 @@ namespace IngameScript
             if ((target?.EntityId ?? 0) == 0)
                 return;
             InitSpeedMatch(target.Value.EntityId);
+            optionalInfo = "";
         }
 
         private void InitSpeedMatch(long targetId)

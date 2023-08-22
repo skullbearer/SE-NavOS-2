@@ -113,6 +113,7 @@ namespace IngameScript.Navigation
         public void AppendStatus(StringBuilder strb)
         {
             strb.Append("\n-- RetroCruiseControl Status --");
+            strb.Append("\nDesired Speed: ").Append(DesiredSpeed.ToString("0.##"));
             strb.Append("\nStage: ").Append(Stage.ToString());
             strb.Append("\nETA: ").Append(estimatedTimeOfArrival.ToString("0.0"));
             strb.Append("\nRemainingAccelTime: ").Append(accelTime.ToString("0.000"));
