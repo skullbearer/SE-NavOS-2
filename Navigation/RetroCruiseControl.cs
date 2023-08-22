@@ -173,6 +173,7 @@ namespace IngameScript.Navigation
         private double estimatedTimeOfArrival;
         private double accelTime;
         private double timeToStartDecel;
+        private double stopTime;
         private double stopDist;
         private double distanceToTarget;
 
@@ -212,7 +213,7 @@ namespace IngameScript.Navigation
             //time to stop: currentSpeed / acceleration;
             //stopping distance: timeToStop * (currentSpeed / 2)
             //or also: currentSpeed^2 / (2 * acceleration)
-            double stopTime = mySpeed / forwardAccelPremultiplied * stopTimeAndDistanceMulti;
+            stopTime = mySpeed / forwardAccelPremultiplied * stopTimeAndDistanceMulti;
             stopDist = stopTime * (mySpeed * 0.5);
             //stopDist = (mySpeed * mySpeed) / (2 * forwardAccel);
 
@@ -239,11 +240,16 @@ namespace IngameScript.Navigation
 
             if (Stage == RetroCruiseStage.OrientAndAccelerate)
             {
-                accelTime = (currentDesiredSpeedDelta / forwardAccelPremultiplied);
-                double accelDist = accelTime * (currentDesiredSpeedDelta * 0.5);
-                double cruiseDist = distanceToTarget - stopDist - accelDist;
-                double cruiseTime = cruiseDist / DesiredSpeed;
-                estimatedTimeOfArrival = accelTime + cruiseTime + stopTime;
+                if (counter % 10 == 0) //calculate eta
+                {
+                    accelTime = (currentDesiredSpeedDelta / forwardAccelPremultiplied);
+                    double accelDist = accelTime * (currentDesiredSpeedDelta * 0.5);
+                    double actualStopTime = DesiredSpeed / forwardAccelPremultiplied * stopTimeAndDistanceMulti;
+                    double actualStopDist = actualStopTime * (DesiredSpeed * 0.5);
+                    double cruiseDist = distanceToTarget - stopDist - accelDist;
+                    double cruiseTime = cruiseDist / DesiredSpeed;
+                    estimatedTimeOfArrival = accelTime + cruiseTime + stopTime;
+                }
 
                 //if (cruiseDist >= decelStartMarginSeconds)//there's enough time to accel to desired speed and turn retrograde
                 //{
@@ -266,20 +272,31 @@ namespace IngameScript.Navigation
 
             if (Stage == RetroCruiseStage.OrientAndDecelerate)
             {
-                double cruiseDist = distanceToTarget - stopDist;
-                double cruiseTime = cruiseDist / DesiredSpeed;
-                estimatedTimeOfArrival = cruiseTime + stopTime;
+                if (counter % 10 == 0) //calculate eta
+                {
+                    double cruiseDist = distanceToTarget - stopDist;
+                    double cruiseTime = cruiseDist / DesiredSpeed;
+                    estimatedTimeOfArrival = cruiseTime + stopTime;
+                }
 
                 OrientAndDecelerate(myVelocity, targetDirection, timeToStartDecel, mySpeed, distanceToTarget);
             }
 
             if (Stage == RetroCruiseStage.DecelerateNoOrient)
             {
+                if (counter % 10 == 0) //calculate eta
+                {
+                    double cruiseDist = distanceToTarget - stopDist;
+                    double cruiseTime = cruiseDist / DesiredSpeed;
+                    estimatedTimeOfArrival = cruiseTime + stopTime;
+                }
+
                 DecelerateNoOrient(myVelocity, timeToStartDecel, mySpeed);
             }
 
             if (Stage == RetroCruiseStage.Complete)
             {
+                estimatedTimeOfArrival = 0;
                 Complete();
             }
 
