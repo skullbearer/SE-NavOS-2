@@ -80,7 +80,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.7 beta";
+        public const string versionStr = "2.7";
         public static VersionInfo versionInfo = new VersionInfo(2, 7, 0);
 
         private Config config;
@@ -233,8 +233,8 @@ namespace IngameScript
             if (gyros.Count == 0)
                 throw new Exception("No gyros");
 
-            debugLcd = TryGetBlockWithName<IMyTextSurface>(debugLcdName);
-            consoleLcd = TryGetBlockWithName<IMyTextSurface>(config.ConsoleLcdName);
+            debugLcd = TryGetBlockWithName<IMyTextSurfaceProvider>(debugLcdName)?.GetSurface(0);
+            consoleLcd = TryGetBlockWithName<IMyTextSurfaceProvider>(config.ConsoleLcdName)?.GetSurface(0);
         }
 
         private T TryGetBlockWithName<T>(string name) where T : class
@@ -306,9 +306,10 @@ Reload (the config)
             pbOut.Append("\nNavMode: ").Append(NavMode.ToString());
             pbOut.Append("\nDebug: ").Append(debugLcd != null);
             pbOut.AppendLine();
-            pbOut.AppendLine();
 
             cruiseController?.AppendStatus(pbOut);
+
+            consoleLcd?.WriteText(pbOut);
 
             pbOut.Append(commandStr);
 
@@ -328,7 +329,6 @@ Reload (the config)
             //pbOut.Append("\n\nNavOS by StarCpt");
 
             Echo(pbOut.ToString());
-            consoleLcd?.WriteText(pbOut);
 
             pbOut.Clear();
         }

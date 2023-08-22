@@ -198,6 +198,8 @@ namespace IngameScript.Navigation
                 downThrust = Thrusters[Direction.Down].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
 
                 forwardAccelPremultiplied = forwardThrust / gridMass * thrustOverrideMultiplier;
+
+                //calculate ACTUAL ETA
             }
 
             Vector3D myPosition = Controller.GetPosition();
