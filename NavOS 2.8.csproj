@@ -41,6 +41,7 @@
     <Compile Include="Config.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="CoreSystemsPbApi.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Navigation\Retroburn.cs" />
     <Compile Include="HashCodeHelpers.cs" />
     <Compile Include="Navigation\Prograde.cs" />

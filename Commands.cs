@@ -31,35 +31,40 @@ namespace IngameScript
                 CommandReloadConfig();
             }
 
-            if (!IsNavIdle)
+            if (!IsNavIdle || args.Length < 1)
             {
                 return;
             }
 
-            bool match = false;
+            bool cmdMatched = false;
 
             if (args.Length >= 3 && args[0].Equals("cruise"))
             {
                 CommandCruise(args);
-                match = true;
+                cmdMatched = true;
             }
             else if (args[0].Equals("retro") || args[0].Equals("retrograde"))
             {
                 CommandRetrograde();
-                match = true;
+                cmdMatched = true;
             }
+            //else if (args[0].Equals("retroburn"))
+            //{
+            //    CommandRetroburn();
+            //    cmdMatched = true;
+            //}
             else if (args[0].Equals("prograde"))
             {
                 CommandPrograde();
-                match = true;
+                cmdMatched = true;
             }
             else if (args[0].Equals("match") || args[0].Equals("speedmatch"))
             {
                 CommandSpeedMatch();
-                match = true;
+                cmdMatched = true;
             }
 
-            if (match)
+            if (cmdMatched)
             {
                 optionalInfo = "";
             }
@@ -95,12 +100,17 @@ namespace IngameScript
                     target = new Vector3D(x, y, z);
                 }
 
-                NavMode = NavModeEnum.Cruise;
-                cruiseController = new RetroCruiseControl(target, desiredSpeed, aimController, controller, gyros[0], thrusters)
+                Vector3D offset = Vector3D.Zero;
+                if (config.OffsetDirection == Config.OffsetType.Forward)
                 {
-                    thrustOverrideMultiplier = (float)config.MaxThrustOverrideRatio,
-                };
-                cruiseController.CruiseTerminated += CruiseTerminated;
+                    offset = (target - controller.GetPosition()).SafeNormalize() * -config.CruiseOffset;
+                }
+                else if (config.OffsetDirection == Config.OffsetType.Right)
+                {
+                    offset = Vector3D.CalculatePerpendicularVector(target - controller.GetPosition()) * config.CruiseOffset;
+                }
+
+                InitRetroCruise(target + offset, desiredSpeed);
             }
             catch (Exception e)
             {
@@ -108,11 +118,34 @@ namespace IngameScript
             }
         }
 
+        private void InitRetroCruise(Vector3D target, double speed)
+        {
+            NavMode = NavModeEnum.Cruise;
+            cruiseController = new RetroCruiseControl(target, speed, aimController, controller, gyros[0], thrusters)
+            {
+                maxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
+            };
+            cruiseController.CruiseTerminated += CruiseTerminated;
+            config.PersistStateData = $"{NavModeEnum.Cruise}|{speed}|{target}";
+            SaveCustomDataConfig();
+        }
+
         private void CommandRetrograde()
         {
             NavMode = NavModeEnum.Retrograde;
             cruiseController = new Retrograde(aimController, controller, gyros[0]);
             cruiseController.CruiseTerminated += CruiseTerminated;
+            config.PersistStateData = $"{NavModeEnum.Retrograde}";
+            SaveCustomDataConfig();
+        }
+
+        private void CommandRetroburn()
+        {
+            NavMode = NavModeEnum.Retroburn;
+            cruiseController = new Retroburn(aimController, controller, gyros[0], thrusters);
+            cruiseController.CruiseTerminated += CruiseTerminated;
+            config.PersistStateData = $"{NavModeEnum.Retroburn}";
+            SaveCustomDataConfig();
         }
 
         private void CommandPrograde()
@@ -120,6 +153,8 @@ namespace IngameScript
             NavMode = NavModeEnum.Prograde;
             cruiseController = new Prograde(aimController, controller, gyros[0]);
             cruiseController.CruiseTerminated += CruiseTerminated;
+            config.PersistStateData = $"{NavModeEnum.Prograde}";
+            SaveCustomDataConfig();
         }
 
         private void CommandSpeedMatch()
@@ -134,12 +169,19 @@ namespace IngameScript
             var target = wcApi.GetAiFocus(Me.CubeGrid.EntityId);
             if ((target?.EntityId ?? 0) == 0)
                 return;
+            InitSpeedMatch(target.Value.EntityId);
+        }
+
+        private void InitSpeedMatch(long targetId)
+        {
             NavMode = NavModeEnum.SpeedMatch;
-            cruiseController = new SpeedMatch(target.Value.EntityId, wcApi, controller, thrusters, Me)
+            cruiseController = new SpeedMatch(targetId, wcApi, controller, thrusters, Me)
             {
-                thrustOverrideMulti = (float)config.MaxThrustOverrideRatio,
+                maxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
+            config.PersistStateData = $"{NavModeEnum.SpeedMatch}|{targetId}";
+            SaveCustomDataConfig();
         }
     }
 }

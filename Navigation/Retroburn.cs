@@ -11,6 +11,8 @@ namespace IngameScript.Navigation
     {
         public override string Name => nameof(Retroburn);
 
+        public float maxThrustOverrideRatio = 1f;
+
         public Retroburn(
             IAimController aimControl,
             IMyShipController controller,

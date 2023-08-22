@@ -17,7 +17,7 @@ namespace IngameScript.Navigation
         public IMyShipController ShipController { get; set; }
         public Dictionary<Direction, List<IMyThrust>> Thrusters { get; set; }
 
-        public float thrustOverrideMulti = 1; //thrust override multiplier
+        public float maxThrustOverrideRatio = 1; //thrust override multiplier
 
         public double relativeSpeedThreshold = 0.01;//stop dampening under this relative speed
 
@@ -103,12 +103,12 @@ namespace IngameScript.Navigation
             Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
             Vector3 thrustAmount = -relativeVelocityLocal * 2 * ShipController.CalculateShipMass().PhysicalMass;
 
-            float backward = thrustAmount.Z < 0 ? Math.Min(-thrustAmount.Z, backwardThrust * thrustOverrideMulti) : 0;
-            float forward = thrustAmount.Z > 0 ? Math.Min(thrustAmount.Z, forwardThrust * thrustOverrideMulti) : 0;
-            float right = thrustAmount.X < 0 ? Math.Min(-thrustAmount.X, rightThrust * thrustOverrideMulti) : 0;
-            float left = thrustAmount.X > 0 ? Math.Min(thrustAmount.X, leftThrust * thrustOverrideMulti) : 0;
-            float up = thrustAmount.Y < 0 ? Math.Min(-thrustAmount.Y, upThrust * thrustOverrideMulti) : 0;
-            float down = thrustAmount.Y > 0 ? Math.Min(thrustAmount.Y, downThrust * thrustOverrideMulti) : 0;
+            float backward = thrustAmount.Z < 0 ? Math.Min(-thrustAmount.Z, backwardThrust * maxThrustOverrideRatio) : 0;
+            float forward = thrustAmount.Z > 0 ? Math.Min(thrustAmount.Z, forwardThrust * maxThrustOverrideRatio) : 0;
+            float right = thrustAmount.X < 0 ? Math.Min(-thrustAmount.X, rightThrust * maxThrustOverrideRatio) : 0;
+            float left = thrustAmount.X > 0 ? Math.Min(thrustAmount.X, leftThrust * maxThrustOverrideRatio) : 0;
+            float up = thrustAmount.Y < 0 ? Math.Min(-thrustAmount.Y, upThrust * maxThrustOverrideRatio) : 0;
+            float down = thrustAmount.Y > 0 ? Math.Min(thrustAmount.Y, downThrust * maxThrustOverrideRatio) : 0;
 
             foreach (var thrust in Thrusters[Direction.Forward])
                 thrust.ThrustOverride = forward;

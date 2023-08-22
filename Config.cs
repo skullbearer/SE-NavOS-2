@@ -8,13 +8,24 @@ namespace IngameScript
 {
     internal class Config
     {
+        public enum OffsetType
+        {
+            None,
+            Forward,
+            Right,
+        }
+
         public static Config Default { get; } = new Config();
+        public static VersionInfo ConfigVersion { get; } = new VersionInfo(1, 1, 0);
 
         public double MaxThrustOverrideRatio { get; set; } = 1.0;
         public string ShipControllerTag { get; set; } = "Nav";
         public string ThrustGroupName { get; set; } = "NavThrust";
         public string GyroGroupName { get; set; } = "NavGyros";
         public string ConsoleLcdName { get; set; } = "consoleLcd";
+        public double CruiseOffset { get; set; } = 0;
+        public OffsetType OffsetDirection { get; set; } = OffsetType.None;
+        public string PersistStateData { get; set; } = "";
 
         private Config()
         {
@@ -31,7 +42,7 @@ namespace IngameScript
                 return false;
             }
 
-            string[] lines = str.Split('\n');
+            string[] lines = str.Split(Environment.NewLine.ToCharArray());
             for (int i = 1; i < lines.Length; i++)
             {
                 if (lines[i].StartsWith("//"))
@@ -42,6 +53,8 @@ namespace IngameScript
                 {
                     switch (substrings[0])
                     {
+                        case nameof(PersistStateData):
+                            conf.PersistStateData = substrings[1]; break;
                         case nameof(MaxThrustOverrideRatio):
                             conf.MaxThrustOverrideRatio = double.Parse(substrings[1]); break;
                         case nameof(ShipControllerTag):
@@ -52,6 +65,13 @@ namespace IngameScript
                             conf.GyroGroupName = substrings[1]; break;
                         case nameof(ConsoleLcdName):
                             conf.ConsoleLcdName = substrings[1]; break;
+                        case nameof(CruiseOffset):
+                            conf.CruiseOffset = double.Parse(substrings[1]); break;
+                        case nameof(OffsetDirection):
+                            OffsetType result;
+                            if (Enum.TryParse<OffsetType>(substrings[1], true, out result))
+                                conf.OffsetDirection = result;
+                            break;
                     }
                 }
                 catch
@@ -68,7 +88,8 @@ namespace IngameScript
         {
             StringBuilder strb = new StringBuilder();
 
-            strb.AppendLine($"NavConfig|{Program.versionInfo.ToString(false)}");
+            strb.AppendLine($"NavConfig | {Program.versionInfo.ToString(false)} | {ConfigVersion.ToString(false)}");
+            strb.AppendLine($"{nameof(PersistStateData)}={PersistStateData}");
             strb.AppendLine();
             strb.AppendLine("// Maximum thrust override. 0 to 1 (Dont use 0)");
             strb.AppendLine($"{nameof(MaxThrustOverrideRatio)}={MaxThrustOverrideRatio}");
@@ -84,6 +105,12 @@ namespace IngameScript
             strb.AppendLine();
             strb.AppendLine("// Copies pb output to this lcd is it exists");
             strb.AppendLine($"{nameof(ConsoleLcdName)}={ConsoleLcdName}");
+            strb.AppendLine();
+            strb.AppendLine("// Cruise offset distance in meters");
+            strb.AppendLine($"{nameof(CruiseOffset)}={CruiseOffset}");
+            strb.AppendLine();
+            strb.AppendLine("// Cruise offset direction, options: 'None', 'Forward', 'Right'");
+            strb.AppendLine($"{nameof(OffsetDirection)}={OffsetDirection}");
 
             return strb.ToString();
         }

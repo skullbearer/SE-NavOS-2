@@ -64,7 +64,7 @@ namespace IngameScript.Navigation
         /// </summary>
         public double orientToleranceAngleRadians = 0.5 * DegToRadMulti;
 
-        public float thrustOverrideMultiplier = 1f;
+        public float maxThrustOverrideRatio = 1f;
 
         //public float reserveThrustRatio = 0.05f;
 
@@ -107,7 +107,7 @@ namespace IngameScript.Navigation
             Stage = RetroCruiseStage.None;
             gridMass = controller.CalculateShipMass().PhysicalMass;
             float forwardThrust = ForwardThrusters.Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            forwardAccelPremultiplied = forwardThrust / gridMass * thrustOverrideMultiplier;
+            forwardAccelPremultiplied = forwardThrust / gridMass * maxThrustOverrideRatio;
         }
 
         public void AppendStatus(StringBuilder strb)
@@ -130,12 +130,12 @@ namespace IngameScript.Navigation
         {
             Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(Controller.WorldMatrix));
             Vector3 thrustAmount = localVelocity * 2 * gridMass;
-            float backward = thrustAmount.Z < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.Z, backThrust * thrustOverrideMultiplier) : 0;
-            float forward = thrustAmount.Z > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.Z, forwardThrust * thrustOverrideMultiplier) : 0;
-            float right = thrustAmount.X < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.X, rightThrust * thrustOverrideMultiplier) : 0;
-            float left = thrustAmount.X > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.X, leftThrust * thrustOverrideMultiplier) : 0;
-            float up = thrustAmount.Y < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.Y, upThrust * thrustOverrideMultiplier) : 0;
-            float down = thrustAmount.Y > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.Y, downThrust * thrustOverrideMultiplier) : 0;
+            float backward = thrustAmount.Z < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.Z, backThrust * maxThrustOverrideRatio) : 0;
+            float forward = thrustAmount.Z > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.Z, forwardThrust * maxThrustOverrideRatio) : 0;
+            float right = thrustAmount.X < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.X, rightThrust * maxThrustOverrideRatio) : 0;
+            float left = thrustAmount.X > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.X, leftThrust * maxThrustOverrideRatio) : 0;
+            float up = thrustAmount.Y < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.Y, upThrust * maxThrustOverrideRatio) : 0;
+            float down = thrustAmount.Y > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.Y, downThrust * maxThrustOverrideRatio) : 0;
 
             foreach (var thrust in Thrusters[Direction.Forward])
                 thrust.ThrustOverride = forward;
@@ -155,10 +155,10 @@ namespace IngameScript.Navigation
         {
             Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(Controller.WorldMatrix));
             Vector3 thrustAmount = localVelocity * 2 * gridMass;
-            float right = thrustAmount.X < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.X, rightThrust * thrustOverrideMultiplier) : 0;
-            float left = thrustAmount.X > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.X, leftThrust * thrustOverrideMultiplier) : 0;
-            float up = thrustAmount.Y < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.Y, upThrust * thrustOverrideMultiplier) : 0;
-            float down = thrustAmount.Y > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.Y, downThrust * thrustOverrideMultiplier) : 0;
+            float right = thrustAmount.X < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.X, rightThrust * maxThrustOverrideRatio) : 0;
+            float left = thrustAmount.X > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.X, leftThrust * maxThrustOverrideRatio) : 0;
+            float up = thrustAmount.Y < DAMPENER_TOLERANCE ? Math.Min(-thrustAmount.Y, upThrust * maxThrustOverrideRatio) : 0;
+            float down = thrustAmount.Y > DAMPENER_TOLERANCE ? Math.Min(thrustAmount.Y, downThrust * maxThrustOverrideRatio) : 0;
 
             foreach (var thrust in Thrusters[Direction.Right])
                 thrust.ThrustOverride = right;
@@ -198,7 +198,7 @@ namespace IngameScript.Navigation
                 upThrust = Thrusters[Direction.Up].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
                 downThrust = Thrusters[Direction.Down].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
 
-                forwardAccelPremultiplied = forwardThrust / gridMass * thrustOverrideMultiplier;
+                forwardAccelPremultiplied = forwardThrust / gridMass * maxThrustOverrideRatio;
 
                 //calculate ACTUAL ETA
             }
@@ -391,7 +391,7 @@ namespace IngameScript.Navigation
             {
                 foreach (var thruster in ForwardThrusters)
                 {
-                    thruster.ThrustOverridePercentage = thrustOverrideMultiplier;
+                    thruster.ThrustOverridePercentage = maxThrustOverrideRatio;
                 }
 
                 DampenSideways(myVelocity);
@@ -437,7 +437,7 @@ namespace IngameScript.Navigation
                     return;
                 }
 
-                float overrideAmount = Math.Min((float)(-timeToStartDecel + thrustOverrideMultiplier), thrustOverrideMultiplier);
+                float overrideAmount = Math.Min((float)(-timeToStartDecel + maxThrustOverrideRatio), maxThrustOverrideRatio);
 
                 debug.Clear();
                 debug.Append("overrideAmount ").AppendLine(overrideAmount.ToString());
@@ -476,7 +476,7 @@ namespace IngameScript.Navigation
                 return;
             }
 
-            float overrideAmount = Math.Min((float)(-timeToStartDecel + thrustOverrideMultiplier), thrustOverrideMultiplier);
+            float overrideAmount = Math.Min((float)(-timeToStartDecel + maxThrustOverrideRatio), maxThrustOverrideRatio);
 
             debug.Clear();
             debug.Append("overrideAmount ").AppendLine(overrideAmount.ToString());

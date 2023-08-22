@@ -28,6 +28,7 @@ namespace IngameScript
         Retro = 2, Retrograde = 2,
         Prograde = 3,
         SpeedMatch = 4,
+        Retroburn = 5,
     }
 
     public enum Direction : byte
@@ -66,7 +67,7 @@ namespace IngameScript
             { Direction.Down, new List<IMyThrust>() },
         };
         private List<IMyGyro> gyros = new List<IMyGyro>();
-        private IMyCockpit controller;
+        private IMyShipController controller;
 
         public static StringBuilder debug = new StringBuilder();
         private IMyTextSurface debugLcd;
@@ -80,7 +81,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.8 dev";
+        public const string versionStr = "2.8 dev2";
         public static VersionInfo versionInfo = new VersionInfo(2, 8, 0);
 
         private Config config;
@@ -100,7 +101,80 @@ namespace IngameScript
             catch { wcApiActive = false; }
 
             UpdateBlocks();
-            Abort();
+            Abort(true);
+
+            TryRestoreNavState();
+        }
+
+        private void TryRestoreNavState()
+        {
+            if (String.IsNullOrWhiteSpace(config.PersistStateData))
+            {
+                return;
+            }
+
+            string[] args = config.PersistStateData.Split('|');
+            NavModeEnum mode;
+            
+            if (args.Length == 0 || !Enum.TryParse<NavModeEnum>(args[0], out mode))
+            {
+                return;
+            }
+
+            try
+            {
+                if (mode == NavModeEnum.Cruise && args.Length >= 3)
+                {
+                    double desiredSpeed;
+                    Vector3D target;
+                    if (double.TryParse(args[1], out desiredSpeed) && Vector3D.TryParse(args[2], out target))
+                    {
+                        InitRetroCruise(target, desiredSpeed);
+                        optionalInfo = $"Restored State: {mode} {desiredSpeed} {FormatVector3D(target, "0.00", '\n')}";
+                    }
+                }
+                if (mode == NavModeEnum.SpeedMatch && args.Length >= 2)
+                {
+                    long targetId;
+                    if (long.TryParse(args[1], out targetId))
+                    {
+                        InitSpeedMatch(targetId);
+                        optionalInfo = $"Restored State: {mode} {targetId}";
+                    }
+                }
+                else if (mode == NavModeEnum.Retro)
+                {
+                    CommandRetrograde();
+                    optionalInfo = $"Restored State: {mode}";
+                }
+                else if (mode == NavModeEnum.Prograde)
+                {
+                    CommandPrograde();
+                    optionalInfo = $"Restored State: {mode}";
+                }
+            }
+            catch (Exception e)
+            {
+                config.PersistStateData = "";
+                SaveCustomDataConfig();
+                optionalInfo = e.ToString();
+            }
+        }
+
+        private static string FormatVector3D(Vector3D vec, string numberFormat = null, char separator = ' ')
+        {
+            if (numberFormat != null)
+            {
+                return $"X:{vec.X.ToString(numberFormat)}{separator}" +
+                       $"Y:{vec.Y.ToString(numberFormat)}{separator}" +
+                       $"Z:{vec.Z.ToString(numberFormat)}{separator}";
+            }
+            else
+            {
+                return $"X:{vec.X.ToString()}{separator}" +
+                       $"Y:{vec.Y.ToString()}{separator}" +
+                       $"Z:{vec.Z.ToString()}{separator}";
+            }
         }
 
         private void SaveCustomDataConfig()
@@ -113,6 +187,10 @@ namespace IngameScript
             if (!Config.TryParse(Me.CustomData, out config))
             {
                 config = Config.Default;
+                SaveCustomDataConfig();
+            }
+            else
+            {
                 SaveCustomDataConfig();
             }
         }
@@ -143,12 +221,18 @@ namespace IngameScript
             }
         }
 
-        private void Abort()
+        private void Abort(bool constructor = false)
         {
             cruiseController?.Abort();
 
             DisableThrustOverrides();
             DisableGyroOverrides();
+
+            if (!constructor)
+            {
+                config.PersistStateData = "";
+                SaveCustomDataConfig();
+            }
         }
 
         private void CruiseTerminated(ICruiseController source, string reason)
@@ -157,6 +241,9 @@ namespace IngameScript
             NavMode = NavModeEnum.None;
 
             optionalInfo = $"{source.Name} Terminated.\nReason: {reason}";
+
+            config.PersistStateData = "";
+            SaveCustomDataConfig();
         }
 
         private void DisableThrustOverrides()
@@ -188,8 +275,10 @@ namespace IngameScript
                 list.Clear();
             }
 
-            var controllers = new List<IMyCockpit>();
-            GridTerminalSystem.GetBlocksOfType(controllers, b => b.CustomName.Contains(config.ShipControllerTag) && b.IsSameConstructAs(Me));
+            var blocks = new List<IMyTerminalBlock>();
+            GridTerminalSystem.GetBlocksOfType(blocks, i => i.IsSameConstructAs(Me));
+
+            var controllers = blocks.OfType<IMyShipController>().Where(b => b.CustomName.Contains(config.ShipControllerTag)).ToList();
             if (controllers.Count == 0)
                 throw new Exception($"No cockpit with \"{config.ShipControllerTag}\" found!");
             else controller = controllers[0];
@@ -278,7 +367,7 @@ namespace IngameScript
 -- Commands --
 Cruise <Speed> <distance>
 Cruise <Speed> <X:Y:Z>
-Retro
+Retro/Retrograde
 Match
 Abort
 Reload (the config)
@@ -296,11 +385,13 @@ Reload (the config)
             }
 
             pbOut.Append("\n-- Loaded Config --\n");
-            pbOut.Append(nameof(config.MaxThrustOverrideRatio)).Append('=').Append(config.MaxThrustOverrideRatio).AppendLine();
+            pbOut.Append(nameof(config.MaxThrustOverrideRatio)).Append('=').AppendLine(config.MaxThrustOverrideRatio.ToString());
             pbOut.Append(nameof(config.ShipControllerTag)).Append('=').AppendLine(config.ShipControllerTag);
             pbOut.Append(nameof(config.ThrustGroupName)).Append('=').AppendLine(config.ThrustGroupName);
             pbOut.Append(nameof(config.GyroGroupName)).Append('=').AppendLine(config.GyroGroupName);
             pbOut.Append(nameof(config.ConsoleLcdName)).Append('=').AppendLine(config.ConsoleLcdName);
+            pbOut.Append(nameof(config.CruiseOffset)).Append('=').AppendLine(config.CruiseOffset.ToString());
+            pbOut.Append(nameof(config.OffsetDirection)).Append('=').AppendLine(config.OffsetDirection.ToString());
 
             pbOut.Append("\n-- Nav Info --");
             pbOut.Append("\nNavMode: ").Append(NavMode.ToString());
@@ -314,6 +405,8 @@ Reload (the config)
             pbOut.Append(commandStr);
 
             pbOut.Append("\n-- Detected Blocks --\n");
+            pbOut.Append("ConsoleLcd: ").Append(consoleLcd != null).AppendLine();
+            pbOut.Append("DebugLcd: ").Append(debugLcd != null).AppendLine();
             pbOut.Append(thrusters[Direction.Forward].Count).Append(" Forward Thrusters\n");
             pbOut.Append(thrusters[Direction.Backward].Count).Append(" Backward Thrusters\n");
             pbOut.Append(thrusters[Direction.Right].Count).Append(" Right Thrusters\n");
