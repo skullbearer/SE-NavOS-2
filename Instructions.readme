@@ -35,7 +35,7 @@ Example: Cruise 500 GPS:target:15000:70000:17000:FFFFFF
 # Retro/Retrograde
 Points the ship in the opposite direction of travel
 
-#Prograde
+# Prograde
 Points the ship in the direction of travel
 
 # Match
