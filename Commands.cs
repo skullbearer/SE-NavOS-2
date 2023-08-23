@@ -31,7 +31,7 @@ namespace IngameScript
                 CommandReloadConfig();
             }
 
-            if (!IsNavIdle || args.Length < 1)
+            if (/*!IsNavIdle || */args.Length < 1)
             {
                 return;
             }
@@ -40,29 +40,36 @@ namespace IngameScript
 
             if (args.Length >= 3 && args[0].Equals("cruise"))
             {
+                Abort();
                 CommandCruise(args, argument);
                 cmdMatched = true;
             }
             else if (args[0].Equals("retro") || args[0].Equals("retrograde"))
             {
+                Abort();
                 CommandRetrograde();
                 cmdMatched = true;
             }
             //else if (args[0].Equals("retroburn"))
             //{
+            //    Abort();
             //    CommandRetroburn();
             //    cmdMatched = true;
             //}
             else if (args[0].Equals("prograde"))
             {
+                Abort();
                 CommandPrograde();
                 cmdMatched = true;
             }
             else if (args[0].Equals("match") || args[0].Equals("speedmatch"))
             {
+                Abort();
                 CommandSpeedMatch();
                 cmdMatched = true;
             }
+
+            //TODO: Calibrate 180 Time
 
             if (cmdMatched)
             {
@@ -116,7 +123,7 @@ namespace IngameScript
                 {
                     offset = (target - controller.GetPosition()).SafeNormalize() * -config.CruiseOffset;
                 }
-                else if (config.OffsetDirection == Config.OffsetType.Right)
+                else if (config.OffsetDirection == Config.OffsetType.Side)
                 {
                     offset = Vector3D.CalculatePerpendicularVector(target - controller.GetPosition()) * config.CruiseOffset;
                 }
@@ -135,6 +142,7 @@ namespace IngameScript
             cruiseController = new RetroCruiseControl(target, speed, aimController, controller, gyros[0], thrusters)
             {
                 maxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
+                decelStartMarginSeconds = config.Ship180TurnTimeSeconds * 1.5,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Cruise}|{speed}|{target}";

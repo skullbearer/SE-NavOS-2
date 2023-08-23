@@ -78,6 +78,7 @@ namespace IngameScript.Navigation
                     //target = wcApi.GetAiFocus(ShipController.CubeGrid.EntityId);
 
                     //support changing main target after running speedmatch
+                    threats.Clear();
                     wcApi.GetSortedThreats(pb, threats);
                     foreach (var threat in threats.Keys)
                     {
@@ -90,18 +91,24 @@ namespace IngameScript.Navigation
                 }
                 catch { }
 
+                if (!target.HasValue)
+                {
+                    ResetThrustOverrides();
+                    return;
+                }
+
                 UpdateThrustAccel();
             }
 
             if (!target.HasValue)
             {
-                ResetThrustOverrides();
                 return;
             }
 
             relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
             Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
             Vector3 thrustAmount = -relativeVelocityLocal * 2 * ShipController.CalculateShipMass().PhysicalMass;
+            thrustAmount *= 0.1f;
 
             float backward = thrustAmount.Z < 0 ? Math.Min(-thrustAmount.Z, backwardThrust * maxThrustOverrideRatio) : 0;
             float forward = thrustAmount.Z > 0 ? Math.Min(thrustAmount.Z, forwardThrust * maxThrustOverrideRatio) : 0;

@@ -12,12 +12,13 @@ namespace IngameScript
         {
             None,
             Forward,
-            Right,
+            Side,
         }
 
         public static Config Default { get; } = new Config();
-        public static VersionInfo ConfigVersion { get; } = new VersionInfo(1, 1, 0);
+        public static VersionInfo ConfigVersion { get; } = new VersionInfo(1, 2, 0);
 
+        public string PersistStateData { get; set; } = "";
         public double MaxThrustOverrideRatio { get; set; } = 1.0;
         public string ShipControllerTag { get; set; } = "Nav";
         public string ThrustGroupName { get; set; } = "NavThrust";
@@ -25,7 +26,7 @@ namespace IngameScript
         public string ConsoleLcdName { get; set; } = "consoleLcd";
         public double CruiseOffset { get; set; } = 0;
         public OffsetType OffsetDirection { get; set; } = OffsetType.None;
-        public string PersistStateData { get; set; } = "";
+        public double Ship180TurnTimeSeconds { get; set; } = 5.0;
 
         private Config()
         {
@@ -72,6 +73,8 @@ namespace IngameScript
                             if (Enum.TryParse<OffsetType>(substrings[1], true, out result))
                                 conf.OffsetDirection = result;
                             break;
+                        case nameof(Ship180TurnTimeSeconds):
+                            conf.Ship180TurnTimeSeconds = double.Parse(substrings[1]); break;
                     }
                 }
                 catch
@@ -94,7 +97,7 @@ namespace IngameScript
             strb.AppendLine("// Maximum thrust override. 0 to 1 (Dont use 0)");
             strb.AppendLine($"{nameof(MaxThrustOverrideRatio)}={MaxThrustOverrideRatio}");
             strb.AppendLine();
-            //strb.AppendLine("// ");
+            strb.AppendLine("//Tag for the controller used for ship orientation");
             strb.AppendLine($"{nameof(ShipControllerTag)}={ShipControllerTag}");
             strb.AppendLine();
             strb.AppendLine("// If this group doesn't exist it uses all thrusters");
@@ -109,8 +112,11 @@ namespace IngameScript
             strb.AppendLine("// Cruise offset distance in meters");
             strb.AppendLine($"{nameof(CruiseOffset)}={CruiseOffset}");
             strb.AppendLine();
-            strb.AppendLine("// Cruise offset direction, options: 'None', 'Forward', 'Right'");
+            strb.AppendLine($"// Cruise offset direction, options: '{OffsetType.None}', '{OffsetType.Forward}', '{OffsetType.Side}'");
             strb.AppendLine($"{nameof(OffsetDirection)}={OffsetDirection}");
+            strb.AppendLine();
+            strb.AppendLine($"// Time for the ship to do a 180 degree turn in seconds");
+            strb.AppendLine($"{nameof(Ship180TurnTimeSeconds)}={Ship180TurnTimeSeconds}");
 
             return strb.ToString();
         }

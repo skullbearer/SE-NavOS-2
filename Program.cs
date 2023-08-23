@@ -25,7 +25,7 @@ namespace IngameScript
     {
         None = 0,
         Cruise = 1,
-        Retro = 2, Retrograde = 2,
+        Retrograde = 2,
         Prograde = 3,
         SpeedMatch = 4,
         Retroburn = 5,
@@ -142,7 +142,7 @@ namespace IngameScript
                         optionalInfo = $"Restored State: {mode} {targetId}";
                     }
                 }
-                else if (mode == NavModeEnum.Retro)
+                else if (mode == NavModeEnum.Retrograde)
                 {
                     CommandRetrograde();
                     optionalInfo = $"Restored State: {mode}";
@@ -187,8 +187,8 @@ namespace IngameScript
             if (!Config.TryParse(Me.CustomData, out config))
             {
                 config = Config.Default;
-                SaveCustomDataConfig();
             }
+            SaveCustomDataConfig();
         }
 
         public void Main(string argument, UpdateType updateSource)

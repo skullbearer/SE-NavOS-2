@@ -1,3 +1,49 @@
-﻿NavOS 2.4
+﻿NavOS brought to you by StarCpt
 
-Author: StarCpt
+Config:
+# PersistStateData: DO NOT TOUCH
+
+# ShipControllerTag: Put this tag in the name of the controller you want to use for orientation
+
+# ThrustGroupName: Only use thrusters in this group for navigation. Uses all thrusters on the ship if the group doesn't exist
+
+# GyroGroupName: Same as above but for gyros
+
+# ConsoleLcdName: Name of the LCD you want some navigation information to be written to
+
+# CruiseOffset: For GPS and X:Y:Z cruise commands, offset the target coords by this amount in meters
+# OffsetDirection: Offset direction, use one of the following (without the single quotes): 'None' 'Forward' 'Side'
+None: CruiseOffset is not used
+Forward: Stop short of target by CruiseOffset.
+Side: Offsets the target by CruiseOffset perpendicularly to the target direction.
+
+# Ship180TurnTimeSeconds: How long it takes the ship to do a 180 degree turn in seconds
+
+Commands:
+# Cruise <DesiredSpeed> <ForwardDistanceMeters>
+Automatically travels the set distance in the forward direction of the ship controller (cockpit) at the desired speed.
+Example: Cruise 500 20000
+
+# Cruise <DesiredSpeed> <X:Y:Z>
+Automatically travels to the set coordinates (plus the offset in config) at the desired speed.
+Example: Cruise 500 15000:70000:17000
+
+# Cruise <DesiredSpeed> <GPS>
+Same as above for GPSes
+Example: Cruise 500 GPS:target:15000:70000:17000:FFFFFF
+
+# Retro/Retrograde
+Points the ship in the opposite direction of travel
+
+#Prograde
+Points the ship in the direction of travel
+
+# Match
+Matches speed to CURRENT WeaponCore lock, stays on that target even if locked target changes.
+Rerun the command to change speed match target to current WeaponCore lock.
+
+# Abort
+Aborts any ongoing navigation routines. Does not enable dampeners
+
+# Reload
+Reloads the config from PB Custom Data. Must be run whenever the config is edited (recompilation also works)
