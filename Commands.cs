@@ -50,12 +50,12 @@ namespace IngameScript
                 CommandRetrograde();
                 cmdMatched = true;
             }
-            //else if (args[0].Equals("retroburn"))
-            //{
-            //    Abort();
-            //    CommandRetroburn();
-            //    cmdMatched = true;
-            //}
+            else if (args[0].Equals("retroburn"))
+            {
+                Abort();
+                CommandRetroburn();
+                cmdMatched = true;
+            }
             else if (args[0].Equals("prograde"))
             {
                 Abort();
@@ -162,7 +162,10 @@ namespace IngameScript
         private void CommandRetroburn()
         {
             NavMode = NavModeEnum.Retroburn;
-            cruiseController = new Retroburn(aimController, controller, gyros[0], thrusters);
+            cruiseController = new Retroburn(aimController, controller, gyros[0], thrusters)
+            {
+                maxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
+            };
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retroburn}";
             SaveCustomDataConfig();

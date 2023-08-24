@@ -146,10 +146,10 @@ namespace IngameScript.Navigation
         {
             forwardThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
             backwardThrust = Thrusters[Direction.Backward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            rightThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            leftThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            upThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            downThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            rightThrust = Thrusters[Direction.Right].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            leftThrust = Thrusters[Direction.Left].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            upThrust = Thrusters[Direction.Up].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            downThrust = Thrusters[Direction.Down].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
         }
 
         public void Abort()

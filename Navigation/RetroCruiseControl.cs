@@ -180,7 +180,6 @@ namespace IngameScript.Navigation
 
         public void Run()
         {
-            counter++;
             if (counter % 10 == 0)
             {
                 gridMass = Controller.CalculateShipMass().PhysicalMass;
@@ -203,6 +202,7 @@ namespace IngameScript.Navigation
 
                 //calculate ACTUAL ETA
             }
+            counter++;
 
             Vector3D myPosition = Controller.GetPosition();
             Vector3D myVelocity = Controller.GetShipVelocities().LinearVelocity;
@@ -374,7 +374,7 @@ namespace IngameScript.Navigation
 
         private void OrientAndAccelerate(double timeToStartDecel, Vector3D targetDirection, double mySpeed, Vector3D myVelocity)
         {
-            if (timeToStartDecel <= decelStartMarginSeconds || (mySpeed >= DesiredSpeed && distanceToTarget <= prevDistanceToTarget))
+            if ((timeToStartDecel <= decelStartMarginSeconds && mySpeed > 0.01) || (mySpeed >= DesiredSpeed && distanceToTarget <= prevDistanceToTarget))
             {
                 Stage = RetroCruiseStage.OrientAndDecelerate;
                 lastAimDirectionAngleRad = null;

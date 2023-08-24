@@ -81,8 +81,8 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.8.1";
-        public static VersionInfo versionInfo = new VersionInfo(2, 8, 1);
+        public const string versionStr = "2.9";
+        public static VersionInfo versionInfo = new VersionInfo(2, 9, 0);
 
         private Config config;
 
@@ -130,7 +130,7 @@ namespace IngameScript
                     if (double.TryParse(args[1], out desiredSpeed) && Vector3D.TryParse(args[2], out target))
                     {
                         InitRetroCruise(target, desiredSpeed);
-                        optionalInfo = $"Restored State: {mode} {desiredSpeed} {FormatVector3D(target, "0.00", '\n')}";
+                        optionalInfo = $"Restored State: {mode} {desiredSpeed}\n{FormatVector3D(target, "0.00", '\n')}";
                     }
                 }
                 if (mode == NavModeEnum.SpeedMatch && args.Length >= 2)
@@ -145,6 +145,11 @@ namespace IngameScript
                 else if (mode == NavModeEnum.Retrograde)
                 {
                     CommandRetrograde();
+                    optionalInfo = $"Restored State: {mode}";
+                }
+                else if (mode == NavModeEnum.Retroburn)
+                {
+                    CommandRetroburn();
                     optionalInfo = $"Restored State: {mode}";
                 }
                 else if (mode == NavModeEnum.Prograde)
@@ -282,9 +287,8 @@ namespace IngameScript
 
             var tempThrusters = new List<IMyThrust>();
             var thrustBlockGroup = GridTerminalSystem.GetBlockGroupWithName(config.ThrustGroupName);
-            if (thrustBlockGroup != null)
-                thrustBlockGroup.GetBlocksOfType<IMyThrust>(tempThrusters, i => i.IsSameConstructAs(Me));
-            else
+            thrustBlockGroup?.GetBlocksOfType<IMyThrust>(tempThrusters, i => i.IsSameConstructAs(Me));
+            if (tempThrusters.Count == 0)
                 GridTerminalSystem.GetBlocksOfType<IMyThrust>(tempThrusters, i => i.IsSameConstructAs(Me));
 
             if (tempThrusters.Count == 0)
@@ -310,9 +314,8 @@ namespace IngameScript
             }
 
             var gyroBlockGroup = GridTerminalSystem.GetBlockGroupWithName(config.GyroGroupName);
-            if (gyroBlockGroup != null)
-                gyroBlockGroup.GetBlocksOfType<IMyGyro>(gyros, i => i.IsSameConstructAs(Me) && i.IsFunctional);
-            else
+            gyroBlockGroup?.GetBlocksOfType<IMyGyro>(gyros, i => i.IsSameConstructAs(Me) && i.IsFunctional);
+            if (gyros.Count == 0)
                 GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros, i => i.IsSameConstructAs(Me) && i.IsFunctional);
 
             if (gyros.Count == 0)
