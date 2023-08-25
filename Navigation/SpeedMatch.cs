@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using VRage;
 using VRageMath;
 
 namespace IngameScript.Navigation
@@ -15,7 +16,6 @@ namespace IngameScript.Navigation
 
         public string Name => nameof(SpeedMatch);
         public IMyShipController ShipController { get; set; }
-        public Dictionary<Direction, List<IMyThrust>> Thrusters { get; set; }
 
         public float maxThrustOverrideRatio = 1; //thrust override multiplier
 
@@ -32,6 +32,7 @@ namespace IngameScript.Navigation
         private float upThrust;
         private float downThrust;
 
+        private Dictionary<Direction, MyTuple<IMyThrust, float>[]> thrusters;
         private int counter = 0;
         private Dictionary<MyDetectedEntityInfo, float> threats = new Dictionary<MyDetectedEntityInfo, float>();
         private Vector3D relativeVelocity;
@@ -48,7 +49,11 @@ namespace IngameScript.Navigation
             this.targetEntityId = targetEntityId;
             this.wcApi = wcApi;
             this.ShipController = shipController;
-            this.Thrusters = thrusters;
+            this.thrusters = thrusters.ToDictionary(
+                kv => kv.Key,
+                kv => thrusters[kv.Key]
+                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * maxThrustOverrideRatio))
+                    .ToArray());
             this.pb = programmableBlock;
         }
 
@@ -75,8 +80,6 @@ namespace IngameScript.Navigation
 
                 try
                 {
-                    //target = wcApi.GetAiFocus(ShipController.CubeGrid.EntityId);
-
                     //support changing main target after running speedmatch
                     threats.Clear();
                     wcApi.GetSortedThreats(pb, threats);
@@ -97,7 +100,7 @@ namespace IngameScript.Navigation
                     return;
                 }
 
-                UpdateThrustAccel();
+                UpdateThrust();
             }
 
             if (!target.HasValue)
@@ -110,46 +113,49 @@ namespace IngameScript.Navigation
             Vector3 thrustAmount = -relativeVelocityLocal * 2 * ShipController.CalculateShipMass().PhysicalMass;
             thrustAmount *= 0.1f;
 
-            float backward = thrustAmount.Z < 0 ? Math.Min(-thrustAmount.Z, backwardThrust * maxThrustOverrideRatio) : 0;
-            float forward = thrustAmount.Z > 0 ? Math.Min(thrustAmount.Z, forwardThrust * maxThrustOverrideRatio) : 0;
-            float right = thrustAmount.X < 0 ? Math.Min(-thrustAmount.X, rightThrust * maxThrustOverrideRatio) : 0;
-            float left = thrustAmount.X > 0 ? Math.Min(thrustAmount.X, leftThrust * maxThrustOverrideRatio) : 0;
-            float up = thrustAmount.Y < 0 ? Math.Min(-thrustAmount.Y, upThrust * maxThrustOverrideRatio) : 0;
-            float down = thrustAmount.Y > 0 ? Math.Min(thrustAmount.Y, downThrust * maxThrustOverrideRatio) : 0;
+            float backward = thrustAmount.Z < 0 ? -thrustAmount.Z : 0;
+            float forward = thrustAmount.Z > 0 ? thrustAmount.Z : 0;
+            float right = thrustAmount.X < 0 ? -thrustAmount.X : 0;
+            float left = thrustAmount.X > 0 ? thrustAmount.X : 0;
+            float up = thrustAmount.Y < 0 ? -thrustAmount.Y : 0;
+            float down = thrustAmount.Y > 0 ? thrustAmount.Y : 0;
 
-            foreach (var thrust in Thrusters[Direction.Forward])
-                thrust.ThrustOverride = forward;
-            foreach (var thrust in Thrusters[Direction.Backward])
-                thrust.ThrustOverride = backward;
-            foreach (var thrust in Thrusters[Direction.Right])
-                thrust.ThrustOverride = right;
-            foreach (var thrust in Thrusters[Direction.Left])
-                thrust.ThrustOverride = left;
-            foreach (var thrust in Thrusters[Direction.Up])
-                thrust.ThrustOverride = up;
-            foreach (var thrust in Thrusters[Direction.Down])
-                thrust.ThrustOverride = down;
+            foreach (var thrust in thrusters[Direction.Forward])
+                thrust.Item1.ThrustOverride = Math.Min(forward, thrust.Item2);
+            foreach (var thrust in thrusters[Direction.Backward])
+                thrust.Item1.ThrustOverride = backward;
+            foreach (var thrust in thrusters[Direction.Right])
+                thrust.Item1.ThrustOverride = right;
+            foreach (var thrust in thrusters[Direction.Left])
+                thrust.Item1.ThrustOverride = left;
+            foreach (var thrust in thrusters[Direction.Up])
+                thrust.Item1.ThrustOverride = up;
+            foreach (var thrust in thrusters[Direction.Down])
+                thrust.Item1.ThrustOverride = down;
         }
 
         private void ResetThrustOverrides()
         {
-            foreach (var list in Thrusters.Values)
+            foreach (var kv in thrusters)
             {
-                foreach (var thrust in list)
+                for (int i = 0; i < kv.Value.Length; i++)
                 {
-                    thrust.ThrustOverridePercentage = 0;
+                    kv.Value[i].Item1.ThrustOverridePercentage = 0;
                 }
             }
         }
 
-        private void UpdateThrustAccel()
+        private void UpdateThrust()
         {
-            forwardThrust = Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            backwardThrust = Thrusters[Direction.Backward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            rightThrust = Thrusters[Direction.Right].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            leftThrust = Thrusters[Direction.Left].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            upThrust = Thrusters[Direction.Up].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
-            downThrust = Thrusters[Direction.Down].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
+            foreach (var kv in thrusters)
+            {
+                for (int i = 0; i < kv.Value.Length; i++)
+                {
+                    var val = kv.Value[i];
+                    val.Item2 = val.Item1.MaxEffectiveThrust * maxThrustOverrideRatio;
+                    kv.Value[i] = val;
+                }
+            }
         }
 
         public void Abort()

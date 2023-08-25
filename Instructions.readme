@@ -38,6 +38,9 @@ Points the ship in the opposite direction of travel
 # Prograde
 Points the ship in the direction of travel
 
+# Retroburn
+Points the ship to retrograde and stops the ship
+
 # Match
 Matches speed to CURRENT WeaponCore lock, stays on that target even if locked target changes.
 Rerun the command to change speed match target to current WeaponCore lock.

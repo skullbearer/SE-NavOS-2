@@ -81,8 +81,8 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.9";
-        public static VersionInfo versionInfo = new VersionInfo(2, 9, 0);
+        public const string versionStr = "2.9.1";
+        public static VersionInfo versionInfo = new VersionInfo(2, 9, 1);
 
         private Config config;
 
@@ -368,6 +368,8 @@ Cruise <Speed> <distance>
 Cruise <Speed> <X:Y:Z>
 Cruise <Speed> <GPS>
 Retro/Retrograde
+Prograde
+Retroburn
 Match
 Abort
 Reload (the config)
