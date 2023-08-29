@@ -47,6 +47,7 @@ namespace IngameScript
 
         //Config is in the CustomData
 
+        //lcd for logging
         const string debugLcdName = "debugLcd";
 
         #endregion mdk preserve
@@ -69,7 +70,7 @@ namespace IngameScript
         private List<IMyGyro> gyros = new List<IMyGyro>();
         private IMyShipController controller;
 
-        public static StringBuilder debug = new StringBuilder();
+        private static StringBuilder debug;
         private IMyTextSurface debugLcd;
         private IMyTextSurface consoleLcd;
 
@@ -123,14 +124,14 @@ namespace IngameScript
 
             try
             {
-                if (mode == NavModeEnum.Cruise && args.Length >= 3)
+                if (mode == NavModeEnum.Cruise && args.Length >= 2)
                 {
                     double desiredSpeed;
                     Vector3D target;
-                    if (double.TryParse(args[1], out desiredSpeed) && Vector3D.TryParse(args[2], out target))
+                    if (double.TryParse(args[1], out desiredSpeed) && Vector3D.TryParse(Storage, out target))
                     {
                         InitRetroCruise(target, desiredSpeed);
-                        optionalInfo = $"Restored State: {mode} {desiredSpeed}\n{FormatVector3D(target, "0.00", '\n')}";
+                        optionalInfo = $"Restored State: {mode} {desiredSpeed}";
                     }
                 }
                 if (mode == NavModeEnum.SpeedMatch && args.Length >= 2)
@@ -322,6 +323,8 @@ namespace IngameScript
                 throw new Exception("No gyros");
 
             debugLcd = TryGetBlockWithName<IMyTextSurfaceProvider>(debugLcdName)?.GetSurface(0);
+            if (debugLcd != null)
+                debug = new StringBuilder();
             consoleLcd = TryGetBlockWithName<IMyTextSurfaceProvider>(config.ConsoleLcdName)?.GetSurface(0);
         }
 
@@ -448,6 +451,11 @@ Reload (the config)
 
             if (hours > 0) return $"{hours.ToString("00")}:{minutes.ToString("00")}:{seconds.ToString("00")}{(fractions ? (seconds - (int)seconds).ToString(".000") : "")}";
             else return $"{minutes.ToString("00")}:{seconds.ToString("00")}";
+        }
+
+        public static void Log(string message)
+        {
+            debug?.AppendLine(message);
         }
     }
 }

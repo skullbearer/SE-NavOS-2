@@ -145,7 +145,8 @@ namespace IngameScript
                 decelStartMarginSeconds = config.Ship180TurnTimeSeconds * 1.5,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
-            config.PersistStateData = $"{NavModeEnum.Cruise}|{speed}|{target}";
+            config.PersistStateData = $"{NavModeEnum.Cruise}|{speed}";
+            Storage = target.ToString();
             SaveCustomDataConfig();
         }
 
