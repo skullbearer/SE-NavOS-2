@@ -7,7 +7,7 @@ Config:
 
 # ThrustGroupName: Only use thrusters in this group for navigation. Uses all thrusters on the ship if the group doesn't exist
 
-# GyroGroupName: Same as above but for gyros
+# GyroGroupName: Same as above but for gyros. Uses the first gyro in the group.
 
 # ConsoleLcdName: Name of the LCD you want some navigation information to be written to
 
@@ -17,7 +17,8 @@ None: CruiseOffset is not used
 Forward: Stop short of target by CruiseOffset.
 Side: Offsets the target by CruiseOffset perpendicularly to the target direction.
 
-# Ship180TurnTimeSeconds: How long it takes the ship to do a 180 degree turn in seconds
+# Ship180TurnTimeSeconds: How long it takes the ship to do a 180 degree turn in seconds.
+You need to set this to equal to or more than the actual 180 turn time.
 
 Commands:
 # Cruise <DesiredSpeed> <ForwardDistanceMeters>

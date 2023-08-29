@@ -19,7 +19,7 @@ namespace IngameScript
 
             if (argument.ToLower().Contains("abort"))
             {
-                Abort();
+                Abort(false);
                 return;
             }
 
@@ -40,31 +40,31 @@ namespace IngameScript
 
             if (args.Length >= 3 && args[0].Equals("cruise"))
             {
-                Abort();
+                Abort(false);
                 CommandCruise(args, argument);
                 cmdMatched = true;
             }
             else if (args[0].Equals("retro") || args[0].Equals("retrograde"))
             {
-                Abort();
+                Abort(false);
                 CommandRetrograde();
                 cmdMatched = true;
             }
             else if (args[0].Equals("retroburn"))
             {
-                Abort();
+                Abort(false);
                 CommandRetroburn();
                 cmdMatched = true;
             }
             else if (args[0].Equals("prograde"))
             {
-                Abort();
+                Abort(false);
                 CommandPrograde();
                 cmdMatched = true;
             }
             else if (args[0].Equals("match") || args[0].Equals("speedmatch"))
             {
-                Abort();
+                Abort(false);
                 CommandSpeedMatch();
                 cmdMatched = true;
             }

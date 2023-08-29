@@ -167,6 +167,12 @@ namespace IngameScript
             }
         }
 
+        public void Save()
+        {
+            DisableGyroOverrides();
+            DisableThrustOverrides();
+        }
+
         private static string FormatVector3D(Vector3D vec, string numberFormat = null, char separator = ' ')
         {
             if (numberFormat != null)
