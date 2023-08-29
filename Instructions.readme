@@ -46,7 +46,7 @@ Matches speed to CURRENT WeaponCore lock, stays on that target even if locked ta
 Rerun the command to change speed match target to current WeaponCore lock.
 
 # Abort
-Aborts any ongoing navigation routines. Does not enable dampeners
+Aborts any ongoing navigation routines. Disables all gyro and thrust overrides and reloads the config. Does not enable dampeners
 
 # Reload
 Reloads the config from PB Custom Data. Must be run whenever the config is edited (recompilation also works)

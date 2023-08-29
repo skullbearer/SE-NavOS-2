@@ -18,19 +18,19 @@ namespace IngameScript.Navigation
         public IMyShipController ShipController { get; set; }
 
         public float maxThrustOverrideRatio = 1; //thrust override multiplier
-
         public double relativeSpeedThreshold = 0.01;//stop dampening under this relative speed
+        public int thrustInterval = 2;
 
         private long targetEntityId;
         private WcPbApi wcApi;
         private IMyTerminalBlock pb;
 
-        private float forwardThrust;
-        private float backwardThrust;
-        private float rightThrust;
-        private float leftThrust;
-        private float upThrust;
-        private float downThrust;
+        //private float forwardThrust;
+        //private float backwardThrust;
+        //private float rightThrust;
+        //private float leftThrust;
+        //private float upThrust;
+        //private float downThrust;
 
         private Dictionary<Direction, MyTuple<IMyThrust, float>[]> thrusters;
         private int counter = 0;
@@ -108,30 +108,37 @@ namespace IngameScript.Navigation
                 return;
             }
 
-            relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
-            Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
-            Vector3 thrustAmount = -relativeVelocityLocal * 2 * ShipController.CalculateShipMass().PhysicalMass;
-            thrustAmount *= 0.1f;
+            if (counter % thrustInterval == 0)
+            {
+                relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
+                Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
+                Vector3 thrustAmount = -relativeVelocityLocal * 2 * ShipController.CalculateShipMass().PhysicalMass;
+                thrustAmount *= 0.5f / thrustInterval;
+                Vector3 input = ShipController.MoveIndicator;
+                bool x0 = Math.Abs(input.X) <= 0.01;
+                bool y0 = Math.Abs(input.Y) <= 0.01;
+                bool z0 = Math.Abs(input.Z) <= 0.01;
 
-            float backward = thrustAmount.Z < 0 ? -thrustAmount.Z : 0;
-            float forward = thrustAmount.Z > 0 ? thrustAmount.Z : 0;
-            float right = thrustAmount.X < 0 ? -thrustAmount.X : 0;
-            float left = thrustAmount.X > 0 ? thrustAmount.X : 0;
-            float up = thrustAmount.Y < 0 ? -thrustAmount.Y : 0;
-            float down = thrustAmount.Y > 0 ? thrustAmount.Y : 0;
+                float backward = thrustAmount.Z < 0 && z0 ? -thrustAmount.Z : 0;
+                float forward = thrustAmount.Z > 0 && z0 ? thrustAmount.Z : 0;
+                float right = thrustAmount.X < 0 && x0 ? -thrustAmount.X : 0;
+                float left = thrustAmount.X > 0 && x0 ? thrustAmount.X : 0;
+                float up = thrustAmount.Y < 0 && y0 ? -thrustAmount.Y : 0;
+                float down = thrustAmount.Y > 0 && y0 ? thrustAmount.Y : 0;
 
-            foreach (var thrust in thrusters[Direction.Forward])
-                thrust.Item1.ThrustOverride = Math.Min(forward, thrust.Item2);
-            foreach (var thrust in thrusters[Direction.Backward])
-                thrust.Item1.ThrustOverride = backward;
-            foreach (var thrust in thrusters[Direction.Right])
-                thrust.Item1.ThrustOverride = right;
-            foreach (var thrust in thrusters[Direction.Left])
-                thrust.Item1.ThrustOverride = left;
-            foreach (var thrust in thrusters[Direction.Up])
-                thrust.Item1.ThrustOverride = up;
-            foreach (var thrust in thrusters[Direction.Down])
-                thrust.Item1.ThrustOverride = down;
+                foreach (var thrust in thrusters[Direction.Forward])
+                    thrust.Item1.ThrustOverride = Math.Min(forward, thrust.Item2);
+                foreach (var thrust in thrusters[Direction.Backward])
+                    thrust.Item1.ThrustOverride = backward;
+                foreach (var thrust in thrusters[Direction.Right])
+                    thrust.Item1.ThrustOverride = right;
+                foreach (var thrust in thrusters[Direction.Left])
+                    thrust.Item1.ThrustOverride = left;
+                foreach (var thrust in thrusters[Direction.Up])
+                    thrust.Item1.ThrustOverride = up;
+                foreach (var thrust in thrusters[Direction.Down])
+                    thrust.Item1.ThrustOverride = down;
+            }
         }
 
         private void ResetThrustOverrides()

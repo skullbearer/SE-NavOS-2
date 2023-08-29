@@ -52,6 +52,8 @@ namespace IngameScript.Navigation
         /// </summary>
         public double completionShipSpeed = 0.05;
 
+        public double completionDistance = 1.0;
+
         /// <summary>
         /// timeToStop + value to start rotating the ship for deceleration
         /// </summary>
@@ -80,11 +82,11 @@ namespace IngameScript.Navigation
         private float forwardAccelPremultiplied; //premultiplied by thrustOverrideMultiplier
 
         private float forwardThrust;
-        private float backThrust;
-        private float rightThrust;
-        private float leftThrust;
-        private float upThrust;
-        private float downThrust;
+        //private float backThrust;
+        //private float rightThrust;
+        //private float leftThrust;
+        //private float upThrust;
+        //private float downThrust;
 
         const float DAMPENER_TOLERANCE = 0.005f;
 
@@ -274,7 +276,7 @@ namespace IngameScript.Navigation
 
             if (Stage == RetroCruiseStage.OrientAndDecelerate)
             {
-                OrientAndDecelerate(myVelocity, targetDirection, timeToStartDecel, mySpeed, distanceToTarget);
+                OrientAndDecelerate(myVelocity, targetDirection, timeToStartDecel, mySpeed);
             }
 
             if (Stage == RetroCruiseStage.DecelerateNoOrient)
@@ -401,7 +403,11 @@ namespace IngameScript.Navigation
             {
                 //lastAimDirectionAngleRad = Vector3D.Angle(Controller.WorldMatrix.Forward, targetDirection);
                 //don't do unnecessary sqrt for controller.matrix.forward because its already a unit vector
-                lastAimDirectionAngleRad = Math.Acos(Controller.WorldMatrix.Forward.Dot(targetDirection) / (/*Controller.WorldMatrix.Forward.LengthSquared() * */targetDirection.Length()));
+                lastAimDirectionAngleRad = Math.Acos(Controller.WorldMatrix.Forward.Dot(targetDirection) / (/*Controller.WorldMatrix.Forward.Length() * */targetDirection.Length()));
+                if (lastAimDirectionAngleRad.Value == double.NaN)
+                {
+                    lastAimDirectionAngleRad = 0;
+                }
             }
 
             if (lastAimDirectionAngleRad.Value <= orientToleranceAngleRadians)
@@ -420,7 +426,7 @@ namespace IngameScript.Navigation
 
         StringBuilder debug => Program.debug;
 
-        private void OrientAndDecelerate(Vector3D myVelocity, Vector3D targetDirection, double timeToStartDecel, double mySpeed, double targetDist)
+        private void OrientAndDecelerate(Vector3D myVelocity, Vector3D targetDirection, double timeToStartDecel, double mySpeed)
         {
             if (mySpeed <= completionShipSpeed)
             {
@@ -444,11 +450,15 @@ namespace IngameScript.Navigation
                 //lastAimDirectionAngleRad = Vector3D.Angle(Controller.WorldMatrix.Forward, orientForward);
                 //don't do unnecessary sqrt for controller.matrix.forward because its already a unit vector
                 lastAimDirectionAngleRad = Math.Acos(Controller.WorldMatrix.Forward.Dot(orientForward) / (/*Controller.WorldMatrix.Forward.LengthSquared() * */orientForward.Length()));
+                if (lastAimDirectionAngleRad.Value == double.NaN)
+                {
+                    lastAimDirectionAngleRad = 0;
+                }
             }
 
             if (lastAimDirectionAngleRad.Value <= orientToleranceAngleRadians)
             {
-                if (targetDist < forwardAccelPremultiplied)
+                if (distanceToTarget < forwardAccelPremultiplied)
                 {
                     ResetGyroOverride();
                     Stage = RetroCruiseStage.DecelerateNoOrient;
@@ -457,9 +467,9 @@ namespace IngameScript.Navigation
 
                 float overrideAmount = Math.Min((float)(-timeToStartDecel + maxThrustOverrideRatio), maxThrustOverrideRatio);
 
-                debug.Clear();
-                debug.Append("overrideAmount ").AppendLine(overrideAmount.ToString());
-                debug.Append("timeToStartDecel ").AppendLine(timeToStartDecel.ToString());
+                //debug.Clear();
+                //debug.Append("overrideAmount ").AppendLine(overrideAmount.ToString());
+                //debug.Append("timeToStartDecel ").AppendLine(timeToStartDecel.ToString());
 
                 foreach (var thruster in thrusters[Direction.Forward])
                 {
@@ -495,9 +505,9 @@ namespace IngameScript.Navigation
 
             float overrideAmount = Math.Min((float)(-timeToStartDecel + maxThrustOverrideRatio), maxThrustOverrideRatio);
 
-            debug.Clear();
-            debug.Append("overrideAmount ").AppendLine(overrideAmount.ToString());
-            debug.Append("timeToStartDecel ").AppendLine(timeToStartDecel.ToString());
+            //debug.Clear();
+            //debug.Append("overrideAmount ").AppendLine(overrideAmount.ToString());
+            //debug.Append("timeToStartDecel ").AppendLine(timeToStartDecel.ToString());
 
             foreach (var thruster in thrusters[Direction.Forward])
             {
