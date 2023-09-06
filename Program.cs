@@ -83,7 +83,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.11dev2";
+        public const string versionStr = "2.11dev3";
         public static VersionInfo versionInfo = new VersionInfo(2, 11, 0);
 
         private Config config;
@@ -431,6 +431,7 @@ Reload (the config)
             pbOut.Append(nameof(config.ConsoleLcdName)).Append('=').AppendLine(config.ConsoleLcdName);
             pbOut.Append(nameof(config.CruiseOffsetDist)).Append('=').AppendLine(config.CruiseOffsetDist.ToString());
             pbOut.Append(nameof(config.CruiseOffsetSideDist)).Append('=').AppendLine(config.CruiseOffsetSideDist.ToString());
+            pbOut.Append(nameof(config.Ship180TurnTimeSeconds)).Append('=').AppendLine(config.Ship180TurnTimeSeconds.ToString());
 
             pbOut.Append("\n-- Nav Info --");
             pbOut.Append("\nNavMode: ").Append(NavMode.ToString());

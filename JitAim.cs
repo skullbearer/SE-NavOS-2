@@ -80,7 +80,7 @@ namespace IngameScript
         }
 
         double error_threshold = MathHelperD.ToRadians(0.025);
-        double minVelThreshold = MathHelperD.ToRadians(0.0025);
+        double minVelThreshold = MathHelperD.ToRadians(0.005);
 
         double nobrake_threshold = MathHelperD.ToRadians(45);
         double amp_threshold = MathHelperD.ToRadians(10);

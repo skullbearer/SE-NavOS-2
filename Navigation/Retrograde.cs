@@ -8,24 +8,18 @@ using VRageMath;
 
 namespace IngameScript.Navigation
 {
-    public class Retrograde : ICruiseController
+    public class Retrograde : OrientControllerBase, ICruiseController
     {
         public event CruiseTerminateEventDelegate CruiseTerminated = delegate { };
 
         public virtual string Name => nameof(Retrograde);
-        public IAimController AimControl { get; set; }
-        public IMyShipController Controller { get; set; }
-        public IMyGyro Gyro { get; set; }
 
         public double terminateSpeed = 5;
 
-        public Retrograde(IAimController aimControl, IMyShipController controller, IMyGyro gyro)
+        public Retrograde(IAimController aimControl, IMyShipController controller, IList<IMyGyro> gyros)
+            : base(aimControl, controller, gyros)
         {
-            this.AimControl = aimControl;
-            this.Controller = controller;
-            this.Gyro = gyro;
 
-            gyro.Enabled = true;
         }
 
         public virtual void AppendStatus(StringBuilder strb)
@@ -35,7 +29,7 @@ namespace IngameScript.Navigation
 
         public virtual void Run()
         {
-            var shipVelocity = Controller.GetShipVelocities().LinearVelocity;
+            var shipVelocity = ShipController.GetShipVelocities().LinearVelocity;
             Orient(-shipVelocity);
 
             if (shipVelocity.LengthSquared() <= terminateSpeed * terminateSpeed)
@@ -44,19 +38,6 @@ namespace IngameScript.Navigation
 
                 RaiseCruiseTerminated(this, $"Speed is less than {terminateSpeed:0.#} m/s");
             }
-        }
-
-        protected void Orient(Vector3D forward)
-        {
-            AimControl.Orient(forward, Gyro, Controller.WorldMatrix);
-        }
-
-        protected void ResetGyroOverride()
-        {
-            Gyro.Pitch = 0;
-            Gyro.Yaw = 0;
-            Gyro.Roll = 0;
-            Gyro.GyroOverride = false;
         }
 
         public virtual void Abort()
@@ -69,6 +50,11 @@ namespace IngameScript.Navigation
         protected void RaiseCruiseTerminated(ICruiseController source, string reason)
         {
             CruiseTerminated.Invoke(source, reason);
+        }
+
+        protected override void OnNoFunctionalGyrosLeft()
+        {
+            RaiseCruiseTerminated(this, "No functional gyros found");
         }
     }
 }

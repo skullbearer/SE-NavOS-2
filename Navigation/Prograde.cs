@@ -7,36 +7,29 @@ using System.Threading.Tasks;
 
 namespace IngameScript.Navigation
 {
-    internal class Prograde : ICruiseController
+    internal class Prograde : OrientControllerBase, ICruiseController
     {
         public event CruiseTerminateEventDelegate CruiseTerminated = delegate { };
 
         public string Name => nameof(Prograde);
-        public IAimController AimControl { get; set; }
         public IMyShipController Controller { get; set; }
-        public IMyGyro Gyro { get; set; }
 
         public double terminateSpeed = 5;
 
-        public Prograde(IAimController aimControl, IMyShipController controller, IMyGyro gyro)
+        public Prograde(IAimController aimControl, IMyShipController controller, IList<IMyGyro> gyros)
+            : base(aimControl, controller, gyros)
         {
-            this.AimControl = aimControl;
             this.Controller = controller;
-            this.Gyro = gyro;
-
-            gyro.Enabled = true;
         }
 
         public void Run()
         {
             var shipVelocity = Controller.GetShipVelocities().LinearVelocity;
-            AimControl.Orient(shipVelocity, Gyro, Controller.WorldMatrix);
+            Orient(shipVelocity);
 
             if (shipVelocity.LengthSquared() <= terminateSpeed * terminateSpeed)
             {
-                ResetGyroOverride();
-
-                CruiseTerminated.Invoke(this, $"Speed is less than {terminateSpeed:0.#} m/s");
+                Terminate($"Speed is less than {terminateSpeed:0.#} m/s");
             }
         }
 
@@ -45,19 +38,21 @@ namespace IngameScript.Navigation
 
         }
 
-        private void ResetGyroOverride()
+        public void Terminate(string reason)
         {
-            Gyro.Pitch = 0;
-            Gyro.Yaw = 0;
-            Gyro.Roll = 0;
-            Gyro.GyroOverride = false;
+            ResetGyroOverride();
+            CruiseTerminated.Invoke(this, reason);
         }
 
         public void Abort()
         {
             ResetGyroOverride();
-
             CruiseTerminated.Invoke(this, $"Aborted");
+        }
+
+        protected override void OnNoFunctionalGyrosLeft()
+        {
+            Terminate("No functional gyros found");
         }
     }
 }

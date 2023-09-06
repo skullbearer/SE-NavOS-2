@@ -10,7 +10,7 @@ using VRageMath;
 
 namespace IngameScript.Navigation
 {
-    public class Retroburn : Retrograde
+    public class Retroburn : Retrograde, ICruiseController
     {
         const float DAMPENER_TOLERANCE = 0.005f;
 
@@ -28,9 +28,9 @@ namespace IngameScript.Navigation
         public Retroburn(
             IAimController aimControl,
             IMyShipController controller,
-            IMyGyro gyro,
+            List<IMyGyro> gyros,
             Dictionary<Direction, List<IMyThrust>> thrusters)
-            : base(aimControl, controller, gyro)
+            : base(aimControl, controller, gyros)
         {
             this.thrusters = thrusters.ToDictionary(
                 kv => kv.Key,
@@ -44,11 +44,11 @@ namespace IngameScript.Navigation
             counter++;
             if (counter % 60 == 0)
             {
-                gridMass = Controller.CalculateShipMass().PhysicalMass;
+                gridMass = ShipController.CalculateShipMass().PhysicalMass;
                 UpdateThrust();
             }
 
-            Vector3D shipVelocity = Controller.GetShipVelocities().LinearVelocity;
+            Vector3D shipVelocity = ShipController.GetShipVelocities().LinearVelocity;
             double velocitySq = shipVelocity.LengthSquared();
 
             if (velocitySq > terminateSpeed * terminateSpeed)
@@ -62,10 +62,10 @@ namespace IngameScript.Navigation
 
             if (counter % runInterval == 0)
             {
-                Controller.DampenersOverride = false;
+                ShipController.DampenersOverride = false;
                 Vector3D shipVelocityNormalized = shipVelocity.SafeNormalize();
 
-                if (Vector3D.Dot(-shipVelocityNormalized, Controller.WorldMatrix.Forward) > 0.999999)
+                if (Vector3D.Dot(-shipVelocityNormalized, ShipController.WorldMatrix.Forward) > 0.999999)
                 {
                     DampenAllDirections(shipVelocity);
                 }
@@ -79,7 +79,7 @@ namespace IngameScript.Navigation
             {
                 ResetThrustOverrides();
                 ResetGyroOverride();
-                Controller.DampenersOverride = true;
+                ShipController.DampenersOverride = true;
                 RaiseCruiseTerminated(this, $"Speed is less than {DAMPENER_TOLERANCE} m/s");
             }
         }
@@ -99,7 +99,7 @@ namespace IngameScript.Navigation
 
         private void DampenAllDirections(Vector3D shipVelocity)
         {
-            Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(Controller.WorldMatrix));
+            Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
             Vector3 thrustAmount = localVelocity * 2 * gridMass / runInterval;
             float backward = thrustAmount.Z < DAMPENER_TOLERANCE ? -thrustAmount.Z : 0;
             float forward = thrustAmount.Z > DAMPENER_TOLERANCE ? thrustAmount.Z : 0;

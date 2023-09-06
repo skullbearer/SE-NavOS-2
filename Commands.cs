@@ -145,7 +145,7 @@ namespace IngameScript
         private void InitRetroCruise(Vector3D target, double speed)
         {
             NavMode = NavModeEnum.Cruise;
-            cruiseController = new RetroCruiseControl(target, speed, aimController, controller, gyros[0], thrusters)
+            cruiseController = new RetroCruiseControl(target, speed, aimController, controller, gyros, thrusters)
             {
                 maxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
                 decelStartMarginSeconds = config.Ship180TurnTimeSeconds * 1.5,
@@ -159,7 +159,7 @@ namespace IngameScript
         private void CommandRetrograde()
         {
             NavMode = NavModeEnum.Retrograde;
-            cruiseController = new Retrograde(aimController, controller, gyros[0]);
+            cruiseController = new Retrograde(aimController, controller, gyros);
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retrograde}";
             SaveCustomDataConfig();
@@ -169,7 +169,7 @@ namespace IngameScript
         private void CommandRetroburn()
         {
             NavMode = NavModeEnum.Retroburn;
-            cruiseController = new Retroburn(aimController, controller, gyros[0], thrusters)
+            cruiseController = new Retroburn(aimController, controller, gyros, thrusters)
             {
                 maxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
             };
@@ -182,7 +182,7 @@ namespace IngameScript
         private void CommandPrograde()
         {
             NavMode = NavModeEnum.Prograde;
-            cruiseController = new Prograde(aimController, controller, gyros[0]);
+            cruiseController = new Prograde(aimController, controller, gyros);
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Prograde}";
             SaveCustomDataConfig();

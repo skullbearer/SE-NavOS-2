@@ -42,6 +42,8 @@
     <Compile Include="Commands.cs" />
     <Compile Include="CoreSystemsPbApi.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Navigation\Orient.cs" />
+    <Compile Include="Navigation\OrientControllerBase.cs" />
     <Compile Include="Navigation\Retroburn.cs" />
     <Compile Include="HashCodeHelpers.cs" />
     <Compile Include="Navigation\Prograde.cs" />

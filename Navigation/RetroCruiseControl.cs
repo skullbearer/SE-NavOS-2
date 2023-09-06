@@ -9,7 +9,7 @@ using VRageMath;
 
 namespace IngameScript.Navigation
 {
-    public class RetroCruiseControl : ICruiseController
+    public class RetroCruiseControl : OrientControllerBase, ICruiseController
     {
         public enum RetroCruiseStage : byte
         {
@@ -46,9 +46,6 @@ namespace IngameScript.Navigation
         }
         public Vector3D Target { get; }
         public double DesiredSpeed { get; }
-        public IAimController AimControl { get; set; }
-        public IMyShipController Controller { get; set; }
-        public IMyGyro Gyro { get; set; }
 
         /// <summary>
         /// what speed end cruise routine during deceleration
@@ -113,14 +110,12 @@ namespace IngameScript.Navigation
             double desiredSpeed,
             IAimController aimControl,
             IMyShipController controller,
-            IMyGyro gyro,
+            IList<IMyGyro> gyros,
             Dictionary<Direction, List<IMyThrust>> thrusters)
+            : base(aimControl, controller, gyros)
         {
             this.Target = target;
             this.DesiredSpeed = desiredSpeed;
-            this.AimControl = aimControl;
-            this.Controller = controller;
-            this.Gyro = gyro;
             this.thrusters = thrusters.ToDictionary(
                 kv => kv.Key,
                 kv => thrusters[kv.Key]
@@ -153,7 +148,7 @@ namespace IngameScript.Navigation
 
         private void DampenAllDirections(Vector3D shipVelocity)
         {
-            Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(Controller.WorldMatrix));
+            Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
             Vector3 thrustAmount = localVelocity * gridMass;
             float backward = thrustAmount.Z < DAMPENER_TOLERANCE ? -thrustAmount.Z : 0;
             float forward = thrustAmount.Z > DAMPENER_TOLERANCE ? thrustAmount.Z : 0;
@@ -191,7 +186,7 @@ namespace IngameScript.Navigation
 
         private void DampenSideways(Vector3D shipVelocity)
         {
-            Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(Controller.WorldMatrix));
+            Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
             Vector3 thrustAmount = localVelocity * gridMass;
             float right = thrustAmount.X < DAMPENER_TOLERANCE ? -thrustAmount.X : 0;
             float left = thrustAmount.X > DAMPENER_TOLERANCE ? thrustAmount.X : 0;
@@ -229,12 +224,12 @@ namespace IngameScript.Navigation
             }
             if (counter60)
             {
-                gridMass = Controller.CalculateShipMass().PhysicalMass;
+                gridMass = ShipController.CalculateShipMass().PhysicalMass;
                 UpdateThrust();
             }
 
-            Vector3D myPosition = Controller.GetPosition();
-            myVelocity = Controller.GetShipVelocities().LinearVelocity;
+            Vector3D myPosition = ShipController.GetPosition();
+            myVelocity = ShipController.GetShipVelocities().LinearVelocity;
             mySpeed = myVelocity.Length();
 
             targetDirection = Target - myPosition;//aka relativePosition
@@ -378,27 +373,27 @@ namespace IngameScript.Navigation
 
         private void ResetGyroOverride()
         {
-            Gyro.Pitch = 0;
-            Gyro.Yaw = 0;
-            Gyro.Roll = 0;
-            Gyro.GyroOverride = false;
+            GyroInUse.Pitch = 0;
+            GyroInUse.Yaw = 0;
+            GyroInUse.Roll = 0;
+            GyroInUse.GyroOverride = false;
         }
 
         private void Orient(Vector3D forward)
         {
-            if (!Gyro.Enabled)
+            if (!GyroInUse.Enabled)
             {
-                Gyro.Enabled = true;
+                GyroInUse.Enabled = true;
             }
 
-            AimControl.Orient(forward, Gyro, Controller.WorldMatrix);
+            AimControl.Orient(forward, GyroInUse, ShipController.WorldMatrix);
         }
 
         private void SetDampenerState(bool enabled)
         {
-            if (Controller.DampenersOverride != enabled)
+            if (ShipController.DampenersOverride != enabled)
             {
-                Controller.DampenersOverride = enabled;
+                ShipController.DampenersOverride = enabled;
             }
         }
 
@@ -426,7 +421,7 @@ namespace IngameScript.Navigation
 
             if (!lastAimDirectionAngleRad.HasValue)
             {
-                double cos = MathHelperD.Clamp(Controller.WorldMatrix.Forward.Dot(aimDirection) / (/*Controller.WorldMatrix.Forward.Length() * */perpSpeed), -1, 1);
+                double cos = MathHelperD.Clamp(ShipController.WorldMatrix.Forward.Dot(aimDirection) / (/*Controller.WorldMatrix.Forward.Length() * */perpSpeed), -1, 1);
                 lastAimDirectionAngleRad = Math.Acos(cos);
             }
 
@@ -475,7 +470,7 @@ namespace IngameScript.Navigation
             {
                 //lastAimDirectionAngleRad = Vector3D.Angle(Controller.WorldMatrix.Forward, targetDirection);
                 //don't do unnecessary sqrt for controller.matrix.forward because its already a unit vector
-                double cos = MathHelperD.Clamp(Controller.WorldMatrix.Forward.Dot(aimDirection) / (/*Controller.WorldMatrix.Forward.Length() * */aimDirection.Length()), -1, 1);
+                double cos = MathHelperD.Clamp(ShipController.WorldMatrix.Forward.Dot(aimDirection) / (/*Controller.WorldMatrix.Forward.Length() * */aimDirection.Length()), -1, 1);
                 lastAimDirectionAngleRad = Math.Acos(cos);
 
                 if (lastAimDirectionAngleRad.Value == double.NaN)
@@ -522,7 +517,7 @@ namespace IngameScript.Navigation
             {
                 //lastAimDirectionAngleRad = Vector3D.Angle(Controller.WorldMatrix.Forward, orientForward);
                 //don't do unnecessary sqrt for controller.matrix.forward because its already a unit vector
-                double cos = MathHelperD.Clamp(Controller.WorldMatrix.Forward.Dot(orientForward) / (/*Controller.WorldMatrix.Forward.LengthSquared() * */orientForward.Length()), -1, 1);
+                double cos = MathHelperD.Clamp(ShipController.WorldMatrix.Forward.Dot(orientForward) / (/*Controller.WorldMatrix.Forward.LengthSquared() * */orientForward.Length()), -1, 1);
                 lastAimDirectionAngleRad = Math.Acos(cos);
 
                 if (lastAimDirectionAngleRad.Value == double.NaN)
@@ -607,6 +602,18 @@ namespace IngameScript.Navigation
             Stage = RetroCruiseStage.Aborted;
 
             CruiseTerminated.Invoke(this, "Aborted");
+        }
+
+        protected override void OnNoFunctionalGyrosLeft()
+        {
+            ResetThrustOverrides();
+            TurnOnAllThrusters();
+
+            ResetGyroOverride();
+
+            Stage = RetroCruiseStage.Aborted;
+
+            CruiseTerminated.Invoke(this, "No functional gyros found");
         }
     }
 }
