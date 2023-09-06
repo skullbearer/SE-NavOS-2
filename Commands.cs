@@ -25,15 +25,15 @@ namespace IngameScript
 
             string[] args = argument.ToLower().Split(' ');
 
+            if (args.Length < 1)
+            {
+                return;
+            }
+
             if (args[0].Equals("reload"))
             {
                 Abort(false);
                 CommandReloadConfig();
-            }
-
-            if (/*!IsNavIdle || */args.Length < 1)
-            {
-                return;
             }
 
             bool cmdMatched = false;
@@ -66,6 +66,12 @@ namespace IngameScript
             {
                 Abort(false);
                 CommandSpeedMatch();
+                cmdMatched = true;
+            }
+            else if (args[0].Equals("orient"))
+            {
+                Abort(false);
+                CommandOrient(argument);
                 cmdMatched = true;
             }
 
@@ -118,17 +124,17 @@ namespace IngameScript
                     target = new Vector3D(x, y, z);
                 }
 
-                Vector3D offset = Vector3D.Zero;
-                if (config.OffsetDirection == Config.OffsetType.Forward)
+                Vector3D offsetTarget = Vector3D.Zero;
+                if (config.CruiseOffsetSideDist > 0)
                 {
-                    offset = (target - controller.GetPosition()).SafeNormalize() * -config.CruiseOffset;
+                    offsetTarget += Vector3D.CalculatePerpendicularVector(target - controller.GetPosition()) * config.CruiseOffsetSideDist;
                 }
-                else if (config.OffsetDirection == Config.OffsetType.Side)
+                if (config.CruiseOffsetDist > 0)
                 {
-                    offset = Vector3D.CalculatePerpendicularVector(target - controller.GetPosition()) * config.CruiseOffset;
+                    offsetTarget += (target - controller.GetPosition()).SafeNormalize() * -config.CruiseOffsetDist;
                 }
 
-                InitRetroCruise(target + offset, desiredSpeed);
+                InitRetroCruise(target + offsetTarget, desiredSpeed);
             }
             catch (Exception e)
             {
@@ -196,6 +202,47 @@ namespace IngameScript
             if ((target?.EntityId ?? 0) == 0)
                 return;
             InitSpeedMatch(target.Value.EntityId);
+            optionalInfo = "";
+        }
+
+        private void CommandOrient(string argument)
+        {
+            try
+            {
+                Vector3D target;
+
+                if (argument.Contains("GPS:"))
+                {
+                    string[] coords = argument.Substring(argument.IndexOf("GPS:")).Split(':');
+
+                    double x = double.Parse(coords[2]);
+                    double y = double.Parse(coords[3]);
+                    double z = double.Parse(coords[4]);
+
+                    target = new Vector3D(x, y, z);
+                }
+                else
+                {
+                    optionalInfo = "Incorrect orient command params, no gps detected";
+                    return;
+                }
+
+                InitOrient(target);
+            }
+            catch (Exception e)
+            {
+                optionalInfo = e.ToString();
+            }
+        }
+
+        private void InitOrient(Vector3D target)
+        {
+            NavMode = NavModeEnum.Orient;
+            cruiseController = new Orient(aimController, controller, gyros, target);
+            cruiseController.CruiseTerminated += CruiseTerminated;
+            config.PersistStateData = $"{NavModeEnum.Orient}";
+            Storage = target.ToString();
+            SaveCustomDataConfig();
             optionalInfo = "";
         }
 
