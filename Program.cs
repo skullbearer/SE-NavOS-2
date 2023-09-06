@@ -29,6 +29,7 @@ namespace IngameScript
         Prograde = 3,
         SpeedMatch = 4,
         Retroburn = 5,
+        Orient = 6,
     }
 
     public enum Direction : byte
@@ -82,8 +83,8 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.10";
-        public static VersionInfo versionInfo = new VersionInfo(2, 10, 0);
+        public const string versionStr = "2.11dev2";
+        public static VersionInfo versionInfo = new VersionInfo(2, 11, 0);
 
         private Config config;
 
@@ -117,13 +118,14 @@ namespace IngameScript
             string[] args = config.PersistStateData.Split('|');
             NavModeEnum mode;
             
-            if (args.Length == 0 || !Enum.TryParse<NavModeEnum>(args[0], out mode))
+            if (args.Length == 0 || !Enum.TryParse<NavModeEnum>(args[0], out mode) || mode == NavModeEnum.None)
             {
                 return;
             }
 
             try
             {
+                bool restoreFailed = false;
                 if (mode == NavModeEnum.Cruise && args.Length >= 2)
                 {
                     double desiredSpeed;
@@ -133,6 +135,10 @@ namespace IngameScript
                         InitRetroCruise(target, desiredSpeed);
                         optionalInfo = $"Restored State: {mode} {desiredSpeed}";
                     }
+                    else
+                    {
+                        restoreFailed = true;
+                    }
                 }
                 if (mode == NavModeEnum.SpeedMatch && args.Length >= 2)
                 {
@@ -141,6 +147,10 @@ namespace IngameScript
                     {
                         InitSpeedMatch(targetId);
                         optionalInfo = $"Restored State: {mode} {targetId}";
+                    }
+                    else
+                    {
+                        restoreFailed = true;
                     }
                 }
                 else if (mode == NavModeEnum.Retrograde)
@@ -157,6 +167,24 @@ namespace IngameScript
                 {
                     CommandPrograde();
                     optionalInfo = $"Restored State: {mode}";
+                }
+                else if (mode == NavModeEnum.Orient)
+                {
+                    Vector3D target;
+                    if (Vector3D.TryParse(Storage, out target))
+                    {
+                        InitOrient(target);
+                        optionalInfo = $"Restored State: {mode}";
+                    }
+                    else
+                    {
+                        restoreFailed = true;
+                    }
+                }
+
+                if (restoreFailed)
+                {
+                    optionalInfo = $"Failed to restore {mode}";
                 }
             }
             catch (Exception e)
@@ -401,8 +429,8 @@ Reload (the config)
             pbOut.Append(nameof(config.ThrustGroupName)).Append('=').AppendLine(config.ThrustGroupName);
             pbOut.Append(nameof(config.GyroGroupName)).Append('=').AppendLine(config.GyroGroupName);
             pbOut.Append(nameof(config.ConsoleLcdName)).Append('=').AppendLine(config.ConsoleLcdName);
-            pbOut.Append(nameof(config.CruiseOffset)).Append('=').AppendLine(config.CruiseOffset.ToString());
-            pbOut.Append(nameof(config.OffsetDirection)).Append('=').AppendLine(config.OffsetDirection.ToString());
+            pbOut.Append(nameof(config.CruiseOffsetDist)).Append('=').AppendLine(config.CruiseOffsetDist.ToString());
+            pbOut.Append(nameof(config.CruiseOffsetSideDist)).Append('=').AppendLine(config.CruiseOffsetSideDist.ToString());
 
             pbOut.Append("\n-- Nav Info --");
             pbOut.Append("\nNavMode: ").Append(NavMode.ToString());

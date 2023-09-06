@@ -11,14 +11,11 @@ Config:
 
 # ConsoleLcdName: Name of the LCD you want some navigation information to be written to
 
-# CruiseOffset: For GPS and X:Y:Z cruise commands, offset the target coords by this amount in meters
-# OffsetDirection: Offset direction, use one of the following (without the single quotes): 'None' 'Forward' 'Side'
-None: CruiseOffset is not used
-Forward: Stop short of target by CruiseOffset.
-Side: Offsets the target by CruiseOffset perpendicularly to the target direction.
+# CruiseOffsetDist: For GPS and X:Y:Z cruise commands, come to a stop this many meters earlier than the target
+# CruiseOffsetSideDist: For GPS and X:Y:Z cruise commands, offset the target by this many meters to the side (side = a random perpendicular direction to the target from your current position)
 
 # Ship180TurnTimeSeconds: How long it takes the ship to do a 180 degree turn in seconds.
-You need to set this to equal to or more than the actual 180 turn time.
+You need to set this to equal to or more than the actual 180 turn time. It determines how early to turn for deceleration. This field is not calculated automatically.
 
 Commands:
 # Cruise <DesiredSpeed> <ForwardDistanceMeters>
@@ -46,8 +43,16 @@ Points the ship to retrograde and stops the ship
 Matches speed to CURRENT WeaponCore lock, stays on that target even if locked target changes.
 Rerun the command to change speed match target to current WeaponCore lock.
 
+# Orient <GPS>
+Orients the ship to point in the direction of the gps with no thruster controls applied.
+
 # Abort
 Aborts any ongoing navigation routines. Disables all gyro and thrust overrides and reloads the config. Does not enable dampeners
 
 # Reload
 Reloads the config from PB Custom Data. Must be run whenever the config is edited (recompilation also works)
+
+TODO:
+Orient <GPS>
+Collision Avoidance
+Multi GPS 'Journey' mode

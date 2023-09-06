@@ -24,9 +24,11 @@ namespace IngameScript
         public string ThrustGroupName { get; set; } = "NavThrust";
         public string GyroGroupName { get; set; } = "NavGyros";
         public string ConsoleLcdName { get; set; } = "consoleLcd";
-        public double CruiseOffset { get; set; } = 0;
-        public OffsetType OffsetDirection { get; set; } = OffsetType.None;
-        public double Ship180TurnTimeSeconds { get; set; } = 5.0;
+        private double CruiseOffset { get; set; } = 0;
+        private OffsetType OffsetDirection { get; set; } = OffsetType.None;
+        public double CruiseOffsetDist { get; set; } = 0;
+        public double CruiseOffsetSideDist { get; set; } = 0;
+        public double Ship180TurnTimeSeconds { get; set; } = 10.0;
 
         private Config()
         {
@@ -44,43 +46,101 @@ namespace IngameScript
             }
 
             string[] lines = str.Split(Environment.NewLine.ToCharArray());
+            //try
+            //{
+            //    VersionInfo ver;
+            //    if (lines.Length >= 1 && VersionInfo.TryParse(lines[0].Split('|').Last().Trim(), out ver) && ver <= new VersionInfo(2, 10, 0))
+            //    {
+            //
+            //    }
+            //}
+            //catch { }
+
+            Dictionary<string, string> confValues = new Dictionary<string, string>();
+
             for (int i = 1; i < lines.Length; i++)
             {
-                if (lines[i].StartsWith("//"))
+                if (String.IsNullOrWhiteSpace(lines[i]) || lines[i].StartsWith("//"))
                     continue;
 
                 string[] substrings = lines[i].Split('=');
-                try
+                if (substrings.Length >= 2 && substrings[0] != null && substrings[1] != null)
                 {
-                    switch (substrings[0])
+                    if (!confValues.ContainsKey(substrings[0]))
                     {
-                        case nameof(PersistStateData):
-                            conf.PersistStateData = substrings[1]; break;
-                        case nameof(MaxThrustOverrideRatio):
-                            conf.MaxThrustOverrideRatio = double.Parse(substrings[1]); break;
-                        case nameof(ShipControllerTag):
-                            conf.ShipControllerTag = substrings[1]; break;
-                        case nameof(ThrustGroupName):
-                            conf.ThrustGroupName = substrings[1]; break;
-                        case nameof(GyroGroupName):
-                            conf.GyroGroupName = substrings[1]; break;
-                        case nameof(ConsoleLcdName):
-                            conf.ConsoleLcdName = substrings[1]; break;
-                        case nameof(CruiseOffset):
-                            conf.CruiseOffset = double.Parse(substrings[1]); break;
-                        case nameof(OffsetDirection):
-                            OffsetType result;
-                            if (Enum.TryParse<OffsetType>(substrings[1], true, out result))
-                                conf.OffsetDirection = result;
-                            break;
-                        case nameof(Ship180TurnTimeSeconds):
-                            conf.Ship180TurnTimeSeconds = double.Parse(substrings[1]); break;
+                        confValues.Add(substrings[0], substrings[1]);
+                    }
+                    else
+                    {
+                        confValues[substrings[0]] = substrings[1];
                     }
                 }
-                catch
+            }
+
+            string result;
+
+            if (confValues.TryGetValue(nameof(PersistStateData), out result))
+                conf.PersistStateData = result;
+
+            if (confValues.TryGetValue(nameof(MaxThrustOverrideRatio), out result))
+            {
+                double val;
+                if (double.TryParse(result, out val))
+                    conf.MaxThrustOverrideRatio = val;
+            }
+
+            if (confValues.TryGetValue(nameof(ShipControllerTag), out result))
+                conf.ShipControllerTag = result;
+
+            if (confValues.TryGetValue(nameof(ThrustGroupName), out result))
+                conf.ThrustGroupName = result;
+
+            if (confValues.TryGetValue(nameof(GyroGroupName), out result))
+                conf.GyroGroupName = result;
+
+            if (confValues.TryGetValue(nameof(ConsoleLcdName), out result))
+                conf.ConsoleLcdName = result;
+
+            if (confValues.TryGetValue(nameof(CruiseOffsetDist), out result))
+            {
+                double val;
+                if (double.TryParse(result, out val))
+                    conf.CruiseOffsetDist += val;
+            }
+
+            if (confValues.TryGetValue(nameof(CruiseOffsetSideDist), out result))
+            {
+                double val;
+                if (double.TryParse(result, out val))
+                    conf.CruiseOffsetSideDist += val;
+            }
+
+            //support for v1.10 or older configs
+            if (confValues.TryGetValue(nameof(OffsetDirection), out result))
+            {
+                OffsetType enumResult;
+                double val;
+                if (Enum.TryParse<OffsetType>(result, true, out enumResult) &&
+                    enumResult != OffsetType.None &&
+                    confValues.TryGetValue(nameof(CruiseOffset), out result) &&
+                    double.TryParse(result, out val))
                 {
-                    //log exception
+                    if (enumResult == OffsetType.Side)
+                    {
+                        conf.CruiseOffsetSideDist += val;
+                    }
+                    else if (enumResult == OffsetType.Forward)
+                    {
+                        conf.CruiseOffsetDist += val;
+                    }
                 }
+            }
+
+            if (confValues.TryGetValue(nameof(Ship180TurnTimeSeconds), out result))
+            {
+                double val;
+                if (double.TryParse(result, out val))
+                    conf.Ship180TurnTimeSeconds = val;
             }
 
             config = conf;
@@ -109,11 +169,9 @@ namespace IngameScript
             strb.AppendLine("// Copies pb output to this lcd is it exists");
             strb.AppendLine($"{nameof(ConsoleLcdName)}={ConsoleLcdName}");
             strb.AppendLine();
-            strb.AppendLine("// Cruise offset distance in meters");
-            strb.AppendLine($"{nameof(CruiseOffset)}={CruiseOffset}");
-            strb.AppendLine();
-            strb.AppendLine($"// Cruise offset direction, options: '{OffsetType.None}', '{OffsetType.Forward}', '{OffsetType.Side}'");
-            strb.AppendLine($"{nameof(OffsetDirection)}={OffsetDirection}");
+            strb.AppendLine("// Cruise offset distances in meters");
+            strb.AppendLine($"{nameof(CruiseOffsetDist)}={CruiseOffsetDist}");
+            strb.AppendLine($"{nameof(CruiseOffsetSideDist)}={CruiseOffsetSideDist}");
             strb.AppendLine();
             strb.AppendLine($"// Time for the ship to do a 180 degree turn in seconds");
             strb.AppendLine($"{nameof(Ship180TurnTimeSeconds)}={Ship180TurnTimeSeconds}");
