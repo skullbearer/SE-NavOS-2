@@ -1,6 +1,6 @@
 ﻿NavOS brought to you by StarCpt
 
-Config:
+Config (In the customdata of the pb):
 # PersistStateData: DO NOT TOUCH
 
 # ShipControllerTag: Put this tag in the name of the controller you want to use for orientation
@@ -53,6 +53,5 @@ Aborts any ongoing navigation routines. Disables all gyro and thrust overrides a
 Reloads the config from PB Custom Data. Must be run whenever the config is edited (recompilation also works)
 
 TODO:
-Orient <GPS>
 Collision Avoidance
 Multi GPS 'Journey' mode
