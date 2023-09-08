@@ -53,9 +53,6 @@ namespace IngameScript
 
         #endregion mdk preserve
 
-        public event Action Update1 = null;
-        public event Action Update10 = null;
-
         public NavModeEnum NavMode { get; set; }
         public bool IsNavIdle => NavMode == NavModeEnum.None;
 
@@ -244,8 +241,6 @@ namespace IngameScript
                 debugLcd.WriteText(debug.ToString());
             }
 
-            Update1?.Invoke();
-
             if (!IsNavIdle && cruiseController != null)
             {
                 cruiseController.Run();
@@ -253,8 +248,6 @@ namespace IngameScript
 
             if ((updateSource & UpdateType.Update10) != 0)
             {
-                Update10?.Invoke();
-
                 WritePbOutput();
             }
         }
