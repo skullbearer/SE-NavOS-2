@@ -80,7 +80,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.11.3-dev2";
+        public const string versionStr = "2.11.3-dev3";
         public static VersionInfo versionInfo = new VersionInfo(2, 11, 3);
 
         private Config config;
@@ -234,7 +234,10 @@ namespace IngameScript
         {
             profiler.Run();
 
-            HandleArgs(argument);
+            if (argument.Length > 0)
+            {
+                HandleArgs(argument);
+            }
 
             if (debugLcd != null)
             {

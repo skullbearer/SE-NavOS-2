@@ -74,8 +74,10 @@ namespace IngameScript
                 CommandOrient(argument);
                 cmdMatched = true;
             }
-
-            //TODO: Calibrate 180 Time
+            else if (args[0].Equals("calibrate180"))
+            {
+                //TODO: Calibrate 180 Time
+            }
 
             if (cmdMatched)
             {
@@ -125,13 +127,17 @@ namespace IngameScript
                 }
 
                 Vector3D offsetTarget = Vector3D.Zero;
-                if (config.CruiseOffsetSideDist > 0)
+
+                if (!distanceCruise)
                 {
-                    offsetTarget += Vector3D.CalculatePerpendicularVector(target - controller.GetPosition()) * config.CruiseOffsetSideDist;
-                }
-                if (config.CruiseOffsetDist > 0)
-                {
-                    offsetTarget += (target - controller.GetPosition()).SafeNormalize() * -config.CruiseOffsetDist;
+                    if (config.CruiseOffsetSideDist > 0)
+                    {
+                        offsetTarget += Vector3D.CalculatePerpendicularVector(target - controller.GetPosition()) * config.CruiseOffsetSideDist;
+                    }
+                    if (config.CruiseOffsetDist > 0)
+                    {
+                        offsetTarget += (target - controller.GetPosition()).SafeNormalize() * -config.CruiseOffsetDist;
+                    }
                 }
 
                 InitRetroCruise(target + offsetTarget, desiredSpeed);
