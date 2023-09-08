@@ -140,7 +140,7 @@ namespace IngameScript.Navigation
             strb.Append("\nTimeToStartDecel: ").Append(timeToStartDecel.ToString("0.000"));
             strb.Append("\nStoppingDistance: ").Append(stopDist.ToString("0.0"));
             if (lastAimDirectionAngleRad.HasValue)
-                strb.Append("\nAimDirectionAngle: ").Append((lastAimDirectionAngleRad.Value * RadToDegMulti).ToString("0.0"));
+                strb.Append("\nAimDirectionAngle: ").Append((lastAimDirectionAngleRad.Value * RadToDegMulti).ToString("0.000"));
             else
                 strb.Append("\nAimDirectionAngle: null");
             strb.AppendLine();
