@@ -83,8 +83,8 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.11";
-        public static VersionInfo versionInfo = new VersionInfo(2, 11, 0);
+        public const string versionStr = "2.11.3-dev2";
+        public static VersionInfo versionInfo = new VersionInfo(2, 11, 3);
 
         private Config config;
 
@@ -103,7 +103,7 @@ namespace IngameScript
             catch { wcApiActive = false; }
 
             UpdateBlocks();
-            Abort(false);
+            //AbortNav(false);
 
             TryRestoreNavState();
         }
@@ -122,6 +122,8 @@ namespace IngameScript
             {
                 return;
             }
+
+            AbortNav(false);
 
             try
             {
@@ -257,12 +259,14 @@ namespace IngameScript
             }
         }
 
-        private void Abort(bool saveconfig = true)
+        private void AbortNav(bool saveconfig = true)
         {
             cruiseController?.Abort();
 
             DisableThrustOverrides();
             DisableGyroOverrides();
+
+            cruiseController = null;
 
             if (saveconfig)
             {
@@ -408,6 +412,7 @@ Retro/Retrograde
 Prograde
 Retroburn
 Match
+Orient <GPS>
 Abort
 Reload (the config)
 ";
