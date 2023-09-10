@@ -80,7 +80,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.11.3-dev3";
+        public const string versionStr = "2.11.3-dev4";
         public static VersionInfo versionInfo = new VersionInfo(2, 11, 3);
 
         private Config config;
@@ -196,8 +196,7 @@ namespace IngameScript
 
         public void Save()
         {
-            DisableGyroOverrides();
-            DisableThrustOverrides();
+
         }
 
         private static string FormatVector3D(Vector3D vec, string numberFormat = null, char separator = ' ')
