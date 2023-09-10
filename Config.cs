@@ -20,6 +20,7 @@ namespace IngameScript
 
         public string PersistStateData { get; set; } = "";
         public double MaxThrustOverrideRatio { get; set; } = 1.0;
+        public bool IgnoreMaxThrustForSpeedMatch { get; set; } = false;
         public string ShipControllerTag { get; set; } = "Nav";
         public string ThrustGroupName { get; set; } = "NavThrust";
         public string GyroGroupName { get; set; } = "NavGyros";
@@ -89,6 +90,13 @@ namespace IngameScript
                     conf.MaxThrustOverrideRatio = val;
             }
 
+            if (confValues.TryGetValue(nameof(IgnoreMaxThrustForSpeedMatch), out result))
+            {
+                bool val;
+                if (bool.TryParse(result, out val))
+                    conf.IgnoreMaxThrustForSpeedMatch = val;
+            }
+
             if (confValues.TryGetValue(nameof(ShipControllerTag), out result))
                 conf.ShipControllerTag = result;
 
@@ -152,12 +160,14 @@ namespace IngameScript
             StringBuilder strb = new StringBuilder();
 
             strb.AppendLine($"NavConfig | {Program.versionInfo.ToString(false)} | {ConfigVersion.ToString(false)}");
+            strb.AppendLine("// Remember to recompile after you change the config!");
             strb.AppendLine($"{nameof(PersistStateData)}={PersistStateData}");
             strb.AppendLine();
             strb.AppendLine("// Maximum thrust override. 0 to 1 (Dont use 0)");
             strb.AppendLine($"{nameof(MaxThrustOverrideRatio)}={MaxThrustOverrideRatio}");
+            strb.AppendLine($"{nameof(IgnoreMaxThrustForSpeedMatch)}={IgnoreMaxThrustForSpeedMatch}");
             strb.AppendLine();
-            strb.AppendLine("//Tag for the controller used for ship orientation");
+            strb.AppendLine("// Tag for the controller used for ship orientation");
             strb.AppendLine($"{nameof(ShipControllerTag)}={ShipControllerTag}");
             strb.AppendLine();
             strb.AppendLine("// If this group doesn't exist it uses all thrusters");
@@ -173,7 +183,7 @@ namespace IngameScript
             strb.AppendLine($"{nameof(CruiseOffsetDist)}={CruiseOffsetDist}");
             strb.AppendLine($"{nameof(CruiseOffsetSideDist)}={CruiseOffsetSideDist}");
             strb.AppendLine();
-            strb.AppendLine($"// Time for the ship to do a 180 degree turn in seconds");
+            strb.AppendLine("// Time for the ship to do a 180 degree turn in seconds");
             strb.AppendLine($"{nameof(Ship180TurnTimeSeconds)}={Ship180TurnTimeSeconds}");
 
             return strb.ToString();

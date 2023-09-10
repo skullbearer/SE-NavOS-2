@@ -80,8 +80,8 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.11.3-dev4";
-        public static VersionInfo versionInfo = new VersionInfo(2, 11, 3);
+        public const string versionStr = "2.12-dev";
+        public static VersionInfo versionInfo = new VersionInfo(2, 12, 0);
 
         private Config config;
 
@@ -425,6 +425,7 @@ Reload (the config)
 
             pbOut.Append("\n-- Loaded Config --\n");
             pbOut.Append(nameof(config.MaxThrustOverrideRatio)).Append('=').AppendLine(config.MaxThrustOverrideRatio.ToString());
+            pbOut.Append(nameof(config.IgnoreMaxThrustForSpeedMatch)).Append('=').AppendLine(config.IgnoreMaxThrustForSpeedMatch.ToString());
             pbOut.Append(nameof(config.ShipControllerTag)).Append('=').AppendLine(config.ShipControllerTag);
             pbOut.Append(nameof(config.ThrustGroupName)).Append('=').AppendLine(config.ThrustGroupName);
             pbOut.Append(nameof(config.GyroGroupName)).Append('=').AppendLine(config.GyroGroupName);
@@ -438,7 +439,7 @@ Reload (the config)
             pbOut.Append("\nDebug: ").Append(debugLcd != null);
             pbOut.AppendLine();
 
-            cruiseController?.AppendStatus(pbOut);
+            AppendNavInfo(pbOut);
 
             consoleLcd?.WriteText(pbOut);
 
@@ -464,6 +465,12 @@ Reload (the config)
             Echo(pbOut.ToString());
 
             pbOut.Clear();
+        }
+
+        private void AppendNavInfo(StringBuilder strb)
+        {
+            //placeholder - 
+            cruiseController?.AppendStatus(strb);
         }
 
         public static string SecondsToDuration(double seconds, bool fractions = false)

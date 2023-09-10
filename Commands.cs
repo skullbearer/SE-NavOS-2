@@ -257,7 +257,7 @@ namespace IngameScript
             NavMode = NavModeEnum.SpeedMatch;
             cruiseController = new SpeedMatch(targetId, wcApi, controller, thrusters, Me)
             {
-                maxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
+                maxThrustOverrideRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)config.MaxThrustOverrideRatio,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.SpeedMatch}|{targetId}";

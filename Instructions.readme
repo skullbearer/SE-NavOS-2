@@ -3,6 +3,10 @@
 Config (In the customdata of the pb):
 # PersistStateData: DO NOT TOUCH
 
+# MaxThrustOverrideRatio: Amount of forward thrust to use. 0 = 0%, 0.5 = 50%, 1 = 100%
+
+# IgnoreMaxThrustForSpeedMatch: Ignore the above config if using SpeedMatch if true.
+
 # ShipControllerTag: Put this tag in the name of the controller you want to use for orientation
 
 # ThrustGroupName: Only use thrusters in this group for navigation. Uses all thrusters on the ship if the group doesn't exist
