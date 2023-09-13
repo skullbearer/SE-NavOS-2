@@ -9,6 +9,7 @@ using VRage.Game;
 
 namespace IngameScript
 {
+    //Original class by klassekatze: https://pastebin.com/Yz9ixdQF
     public class JitAim : IAimController
     {
         public static double gyroMaxRPM = 3.1415;
@@ -172,7 +173,10 @@ namespace IngameScript
 
             if (ticksOnTarget > minTicksOnTarget)
             {
-                gyro.GyroOverride = false;
+                //gyro.GyroOverride = false;
+                gyro.Pitch = 0;
+                gyro.Yaw = 0;
+                gyro.Roll = 0;
             }
         }
 

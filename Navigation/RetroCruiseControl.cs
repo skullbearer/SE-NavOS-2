@@ -55,15 +55,28 @@ namespace IngameScript.Navigation
         /// <summary>
         /// timeToStop + value to start rotating the ship for deceleration
         /// </summary>
-        public double decelStartMarginSeconds = 5;
+        public double decelStartMarginSeconds = 10;
 
         /// <summary>
         /// aim/orient tolerance in radians
         /// </summary>
-        public double orientToleranceAngleRadians = 0.5 * DegToRadMulti;
+        public double OrientToleranceAngleRadians
+        {
+            get { return _orientToleranceAngleRadians; }
+            set
+            {
+                if (_orientToleranceAngleRadians != value)
+                {
+                    _orientToleranceAngleRadians = value;
+                    _orientToleranceAngleRadiansCos = Math.Cos(value);
+                }
+            }
+        }
+        private double _orientToleranceAngleRadians = 0.05 * DegToRadMulti;
+        private double _orientToleranceAngleRadiansCos;
 
         public float maxThrustOverrideRatio = 1f;
-        public double maxInitialPerpendicularVelocity = 5;
+        public double maxInitialPerpendicularVelocity = 1;
 
         //public float reserveThrustRatio = 0.05f;
 
@@ -73,7 +86,7 @@ namespace IngameScript.Navigation
         //how far off the aim is from the desired orientation
         private Dictionary<Direction, MyTuple<IMyThrust, float>[]> thrusters;
 
-        const float DAMPENER_TOLERANCE = 0.005f;
+        const float DAMPENER_TOLERANCE = 0.01f;
 
         private bool counter5 = false;
         private bool counter10 = false;
@@ -89,6 +102,7 @@ namespace IngameScript.Navigation
         private float forwardAccel;
         private float forwardAccelPremultiplied; //premultiplied by maxThrustOverrideRatio
         private float forwardThrust;
+        private float forwardThrustInv;
 
         //updated every 10 ticks
         private double? lastAimDirectionAngleRad = null;
@@ -104,6 +118,9 @@ namespace IngameScript.Navigation
         private double mySpeed;
         private Vector3D targetDirection;
         private double currentAndDesiredSpeedDelta;
+
+        private string cruiseStageStr;
+        private StringBuilder statusStrb = new StringBuilder();
 
         public RetroCruiseControl(
             Vector3D target,
@@ -125,25 +142,54 @@ namespace IngameScript.Navigation
             Stage = RetroCruiseStage.None;
             gridMass = controller.CalculateShipMass().PhysicalMass;
             forwardThrust = this.thrusters[Direction.Forward].Where(t => t.Item1.IsWorking).Sum(t => t.Item1.MaxEffectiveThrust);
+            forwardThrustInv = 1 / forwardThrust;
             forwardAccel = forwardThrust / gridMass;
             forwardAccelPremultiplied = forwardAccel * maxThrustOverrideRatio;
         }
 
         public void AppendStatus(StringBuilder strb)
         {
-            strb.Append("\n-- RetroCruiseControl Status --");
-            strb.Append("\nDesired Speed: ").Append(DesiredSpeed.ToString("0.##"));
-            strb.Append("\nTargetDistance: ").Append(distanceToTarget.ToString("0.0"));
-            strb.Append("\nStage: ").Append(Stage.ToString());
-            strb.Append("\nETA: ").Append(estimatedTimeOfArrival.ToString("0.0"));
-            strb.Append("\nRemainingAccelTime: ").Append(accelTime.ToString("0.000"));
-            strb.Append("\nTimeToStartDecel: ").Append(timeToStartDecel.ToString("0.000"));
-            strb.Append("\nStoppingDistance: ").Append(stopDist.ToString("0.0"));
+            strb.AppendStringBuilder(statusStrb);
+        }
+
+        private static readonly RetroCruiseStage[] allStages = (RetroCruiseStage[])Enum.GetValues(typeof(RetroCruiseStage));
+
+        private void UpdateStatusStrb()
+        {
+            statusStrb.Clear();
+            statusStrb.AppendLine("\n-- RetroCruiseControl Status --\n");
+
+            switch (Stage)
+            {
+                case RetroCruiseStage.CancelPerpendicularVelocity:
+                    statusStrb.AppendLine($"> Cancel Perpendicular Speed\nAccelerate\nCruise\nDecelerate\nApproach Target");
+                    break;
+                case RetroCruiseStage.OrientAndAccelerate:
+                    statusStrb.AppendLine($">> Cancel Perpendicular Speed\n> Accelerate\nCruise\nDecelerate");
+                    break;
+                case RetroCruiseStage.OrientAndDecelerate:
+                case RetroCruiseStage.DecelerateNoOrient:
+                case RetroCruiseStage.FinalDecelAndStop:
+                    statusStrb.AppendLine($">> Cancel Perpendicular Speed\n>> Accelerate");
+                    if (!decelerating)
+                        statusStrb.AppendLine($"> Cruise\nDecelerate");
+                    else
+                        statusStrb.AppendLine($">> Cancel Perpendicular Speed\n>> Cruise\n> Decelerate");
+                    break;
+            }
+
+            statusStrb.Append("\nDesired Speed: ").Append(DesiredSpeed.ToString("0.##"));
+            statusStrb.Append("\nTargetDistance: ").Append(distanceToTarget.ToString("0.0"));
+            statusStrb.Append("\nStage: ").Append(Stage.ToString());
+            statusStrb.Append("\nETA: ").Append(estimatedTimeOfArrival.ToString("0.0"));
+            statusStrb.Append("\nRemainingAccelTime: ").Append(accelTime.ToString("0.000"));
+            statusStrb.Append("\nTimeToStartDecel: ").Append(timeToStartDecel.ToString("0.000"));
+            statusStrb.Append("\nStoppingDistance: ").Append(stopDist.ToString("0.0"));
             if (lastAimDirectionAngleRad.HasValue)
-                strb.Append("\nAimDirectionAngle: ").Append((lastAimDirectionAngleRad.Value * RadToDegMulti).ToString("0.000"));
+                statusStrb.Append("\nAimDirectionAngle: ").Append((lastAimDirectionAngleRad.Value * RadToDegMulti).ToString("0.000"));
             else
-                strb.Append("\nAimDirectionAngle: null");
-            strb.AppendLine();
+                statusStrb.Append("\nAimDirectionAngle: null");
+            statusStrb.AppendLine();
         }
 
         private void DampenAllDirections(Vector3D shipVelocity)
@@ -212,6 +258,8 @@ namespace IngameScript.Navigation
             counter60 = counter % 60 == 0;
             if (counter10)
             {
+                UpdateStatusStrb();
+
                 lastAimDirectionAngleRad = null;
 
                 SetDampenerState(false);
@@ -219,12 +267,21 @@ namespace IngameScript.Navigation
             if (counter30)
             {
                 forwardThrust = thrusters[Direction.Forward].Where(t => t.Item1.IsWorking).Sum(t => t.Item1.MaxEffectiveThrust);
+                forwardThrustInv = 1 / forwardThrust;
                 forwardAccel = forwardThrust / gridMass;
                 forwardAccelPremultiplied = forwardAccel * maxThrustOverrideRatio;
             }
             if (counter60)
             {
                 gridMass = ShipController.CalculateShipMass().PhysicalMass;
+                UpdateThrust();
+            }
+
+            if (Stage == RetroCruiseStage.None)
+            {
+                ResetGyroOverride();
+                ResetThrustOverrides();
+                TurnOnAllThrusters();
                 UpdateThrust();
             }
 
@@ -249,13 +306,6 @@ namespace IngameScript.Navigation
 
             if (Stage == RetroCruiseStage.None)
             {
-                ResetThrustOverrides();
-
-                //todo: make the ship stop using retroDecel
-
-                //or cancel out current sideways velocity
-                //and backwards velocity (moving away from target) if any
-
                 Vector3D perpVel = Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection);
                 if (perpVel.LengthSquared() > maxInitialPerpendicularVelocity * maxInitialPerpendicularVelocity)
                 {
@@ -267,30 +317,41 @@ namespace IngameScript.Navigation
                 }
             }
 
-            if (Stage == RetroCruiseStage.CancelPerpendicularVelocity)
+            while (true)
             {
-                CancelPerpendicularVelocity();
-            }
+                if (Stage == RetroCruiseStage.CancelPerpendicularVelocity)
+                {
+                    CancelPerpendicularVelocity();
+                }
 
-            if (Stage == RetroCruiseStage.OrientAndAccelerate)
-            {
-                OrientAndAccelerate();
-            }
+                if (Stage == RetroCruiseStage.OrientAndAccelerate)
+                {
+                    OrientAndAccelerate();
+                }
 
-            if (Stage == RetroCruiseStage.OrientAndDecelerate)
-            {
-                OrientAndDecelerate();
-            }
+                if (Stage == RetroCruiseStage.OrientAndDecelerate)
+                {
+                    if (counter30 && timeToStartDecel * 0.9 > decelStartMarginSeconds && mySpeed < DesiredSpeed * 0.5)
+                    {
+                        Stage = RetroCruiseStage.OrientAndAccelerate;
+                        continue;
+                    }
 
-            if (Stage == RetroCruiseStage.DecelerateNoOrient)
-            {
-                DecelerateNoOrient();
-            }
+                    OrientAndDecelerate();
+                }
 
-            if (Stage == RetroCruiseStage.Complete)
-            {
-                estimatedTimeOfArrival = 0;
-                Complete();
+                if (Stage == RetroCruiseStage.DecelerateNoOrient)
+                {
+                    DecelerateNoOrient();
+                }
+
+                if (Stage == RetroCruiseStage.Complete)
+                {
+                    estimatedTimeOfArrival = 0;
+                    Complete();
+                }
+
+                break;
             }
 
             if (counter10)
@@ -314,7 +375,7 @@ namespace IngameScript.Navigation
                     accelTime = 0;
 
                     double cruiseDist = distanceToTarget - stopDist;
-                    double cruiseTime = cruiseDist / DesiredSpeed;
+                    double cruiseTime = cruiseDist / mySpeed;
 
                     estimatedTimeOfArrival = cruiseTime + stopTime;
                 }
@@ -371,24 +432,6 @@ namespace IngameScript.Navigation
             }
         }
 
-        private void ResetGyroOverride()
-        {
-            GyroInUse.Pitch = 0;
-            GyroInUse.Yaw = 0;
-            GyroInUse.Roll = 0;
-            GyroInUse.GyroOverride = false;
-        }
-
-        private void Orient(Vector3D forward)
-        {
-            if (!GyroInUse.Enabled)
-            {
-                GyroInUse.Enabled = true;
-            }
-
-            AimControl.Orient(forward, GyroInUse, ShipController.WorldMatrix);
-        }
-
         private void SetDampenerState(bool enabled)
         {
             if (ShipController.DampenersOverride != enabled)
@@ -403,6 +446,8 @@ namespace IngameScript.Navigation
             ResetGyroOverride();
             SetDampenerState(false);
             lastAimDirectionAngleRad = null;
+
+            UpdateStatusStrb();
         }
 
         private void CancelPerpendicularVelocity()
@@ -421,11 +466,10 @@ namespace IngameScript.Navigation
 
             if (!lastAimDirectionAngleRad.HasValue)
             {
-                double cos = MathHelperD.Clamp(ShipController.WorldMatrix.Forward.Dot(aimDirection) / (/*Controller.WorldMatrix.Forward.Length() * */perpSpeed), -1, 1);
-                lastAimDirectionAngleRad = Math.Acos(cos);
+                lastAimDirectionAngleRad = AngleRadiansBetweenVectorAndControllerForward(aimDirection);
             }
 
-            if (lastAimDirectionAngleRad.Value <= orientToleranceAngleRadians)
+            if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
             {
                 float overrideAmount = MathHelper.Clamp(((float)perpSpeed * 2 * gridMass) / forwardThrust, 0, maxThrustOverrideRatio);
                 foreach (var thruster in thrusters[Direction.Forward])
@@ -468,18 +512,10 @@ namespace IngameScript.Navigation
 
             if (!lastAimDirectionAngleRad.HasValue)
             {
-                //lastAimDirectionAngleRad = Vector3D.Angle(Controller.WorldMatrix.Forward, targetDirection);
-                //don't do unnecessary sqrt for controller.matrix.forward because its already a unit vector
-                double cos = MathHelperD.Clamp(ShipController.WorldMatrix.Forward.Dot(aimDirection) / (/*Controller.WorldMatrix.Forward.Length() * */aimDirection.Length()), -1, 1);
-                lastAimDirectionAngleRad = Math.Acos(cos);
-
-                if (lastAimDirectionAngleRad.Value == double.NaN)
-                {
-                    lastAimDirectionAngleRad = 0;
-                }
+                lastAimDirectionAngleRad = AngleRadiansBetweenVectorAndControllerForward(aimDirection);
             }
 
-            if (lastAimDirectionAngleRad.Value <= orientToleranceAngleRadians)
+            if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
             {
                 foreach (var thruster in thrusters[Direction.Forward])
                 {
@@ -492,6 +528,8 @@ namespace IngameScript.Navigation
 
             ResetThrustOverridesExceptBack();
         }
+
+        private bool decelerating = false;
 
         private void OrientAndDecelerate()
         {
@@ -515,18 +553,10 @@ namespace IngameScript.Navigation
 
             if (!lastAimDirectionAngleRad.HasValue)
             {
-                //lastAimDirectionAngleRad = Vector3D.Angle(Controller.WorldMatrix.Forward, orientForward);
-                //don't do unnecessary sqrt for controller.matrix.forward because its already a unit vector
-                double cos = MathHelperD.Clamp(ShipController.WorldMatrix.Forward.Dot(orientForward) / (/*Controller.WorldMatrix.Forward.LengthSquared() * */orientForward.Length()), -1, 1);
-                lastAimDirectionAngleRad = Math.Acos(cos);
-
-                if (lastAimDirectionAngleRad.Value == double.NaN)
-                {
-                    lastAimDirectionAngleRad = 0;
-                }
+                lastAimDirectionAngleRad = AngleRadiansBetweenVectorAndControllerForward(orientForward);
             }
 
-            if (lastAimDirectionAngleRad.Value <= orientToleranceAngleRadians)
+            if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
             {
                 if (distanceToTarget < forwardAccelPremultiplied)
                 {
@@ -534,7 +564,9 @@ namespace IngameScript.Navigation
                     return;
                 }
 
-                float overrideAmount = Math.Min(((float)-timeToStartDecel + maxThrustOverrideRatio), maxThrustOverrideRatio);
+                float overrideAmount = MathHelper.Clamp(((float)-timeToStartDecel + maxThrustOverrideRatio), 0f, maxThrustOverrideRatio);
+
+                decelerating = overrideAmount > 0;
 
                 foreach (var thruster in thrusters[Direction.Forward])
                 {
@@ -562,6 +594,11 @@ namespace IngameScript.Navigation
                 return;
             }
 
+            if (!lastAimDirectionAngleRad.HasValue)
+            {
+                lastAimDirectionAngleRad = AngleRadiansBetweenVectorAndControllerForward(-targetDirection);
+            }
+
             bool approaching = Vector3D.Dot(targetDirection, myVelocity) > 0;
 
             if (!approaching)
@@ -580,6 +617,23 @@ namespace IngameScript.Navigation
             DampenSideways(myVelocity);
         }
 
+        private double AngleRadiansCosBetweenVectorAndControllerForward(Vector3D vec)
+        {
+            return ShipController.WorldMatrix.Forward.Dot(vec) / vec.Length();
+        }
+
+        private double AngleRadiansBetweenVectorAndControllerForward(Vector3D vec)
+        {
+            //don't do unnecessary sqrt for controller.matrix.forward because its already a unit vector
+            double cos = ShipController.WorldMatrix.Forward.Dot(vec) / vec.Length();
+            double angle = Math.Acos(cos);
+            if (angle == double.NaN)
+            {
+                return 0;
+            }
+            return angle;
+        }
+
         private void Complete()
         {
             ResetThrustOverrides();
@@ -589,7 +643,7 @@ namespace IngameScript.Navigation
 
             SetDampenerState(true);
 
-            CruiseTerminated.Invoke(this, "Destination Reached");
+            CruiseTerminated.Invoke(this, distanceToTarget < 10 ? "Destination Reached" : "Terminated");
         }
 
         public void Abort()
