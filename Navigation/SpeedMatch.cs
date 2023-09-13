@@ -82,13 +82,22 @@ namespace IngameScript.Navigation
                 {
                     //support changing main target after running speedmatch
                     threats.Clear();
-                    wcApi.GetSortedThreats(pb, threats);
-                    foreach (var threat in threats.Keys)
+
+                    var aifocus = wcApi.GetAiFocus(pb.EntityId);
+                    if (aifocus?.EntityId == targetEntityId)
                     {
-                        if (threat.EntityId == targetEntityId)
+                        target = aifocus.Value;
+                    }
+                    else
+                    {
+                        wcApi.GetSortedThreats(pb, threats);
+                        foreach (var threat in threats.Keys)
                         {
-                            target = threat;
-                            break;
+                            if (threat.EntityId == targetEntityId)
+                            {
+                                target = threat;
+                                break;
+                            }
                         }
                     }
                 }
