@@ -10,19 +10,30 @@ using VRageMath;
 
 namespace IngameScript.Navigation
 {
-    public class Retroburn : Retrograde, ICruiseController
+    public class Retroburn : Retrograde, ICruiseController, IVariableMaxOverrideThrustController
     {
         const float DAMPENER_TOLERANCE = 0.005f;
 
         public override string Name => nameof(Retroburn);
+        public float MaxThrustOverrideRatio
+        {
+            get { return _maxThrustOverrideRatio; }
+            set
+            {
+                if (_maxThrustOverrideRatio != value)
+                {
+                    _maxThrustOverrideRatio = value;
+                    UpdateThrust();
+                }
+            }
+        }
 
-        public float maxThrustOverrideRatio = 1f;
         public int runInterval = 10;
 
+        private float _maxThrustOverrideRatio = 1f;
+
         private Dictionary<Direction, MyTuple<IMyThrust, float>[]> thrusters;
-
         private float gridMass;
-
         private int counter = -1;
 
         public Retroburn(
@@ -35,7 +46,7 @@ namespace IngameScript.Navigation
             this.thrusters = thrusters.ToDictionary(
                 kv => kv.Key,
                 kv => thrusters[kv.Key]
-                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * maxThrustOverrideRatio))
+                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustOverrideRatio))
                     .ToArray());
         }
 
@@ -91,7 +102,7 @@ namespace IngameScript.Navigation
                 for (int i = 0; i < kv.Value.Length; i++)
                 {
                     var val = kv.Value[i];
-                    val.Item2 = val.Item1.MaxEffectiveThrust * maxThrustOverrideRatio;
+                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustOverrideRatio;
                     kv.Value[i] = val;
                 }
             }

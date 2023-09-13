@@ -10,16 +10,29 @@ using VRageMath;
 
 namespace IngameScript.Navigation
 {
-    internal class SpeedMatch : ICruiseController
+    internal class SpeedMatch : ICruiseController, IVariableMaxOverrideThrustController
     {
         public event CruiseTerminateEventDelegate CruiseTerminated;
 
         public string Name => nameof(SpeedMatch);
         public IMyShipController ShipController { get; set; }
+        public float MaxThrustOverrideRatio
+        {
+            get { return _maxThrustOverrideRatio; }
+            set
+            {
+                if (_maxThrustOverrideRatio != value)
+                {
+                    _maxThrustOverrideRatio = value;
+                    UpdateThrust();
+                }
+            }
+        }
 
-        public float maxThrustOverrideRatio = 1; //thrust override multiplier
         public double relativeSpeedThreshold = 0.01;//stop dampening under this relative speed
         public int thrustInterval = 2;
+
+        private float _maxThrustOverrideRatio = 1; //thrust override multiplier
 
         private long targetEntityId;
         private WcPbApi wcApi;
@@ -52,7 +65,7 @@ namespace IngameScript.Navigation
             this.thrusters = thrusters.ToDictionary(
                 kv => kv.Key,
                 kv => thrusters[kv.Key]
-                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * maxThrustOverrideRatio))
+                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustOverrideRatio))
                     .ToArray());
             this.pb = programmableBlock;
         }
@@ -168,7 +181,7 @@ namespace IngameScript.Navigation
                 for (int i = 0; i < kv.Value.Length; i++)
                 {
                     var val = kv.Value[i];
-                    val.Item2 = val.Item1.MaxEffectiveThrust * maxThrustOverrideRatio;
+                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustOverrideRatio;
                     kv.Value[i] = val;
                 }
             }

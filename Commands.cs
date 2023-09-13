@@ -35,6 +35,38 @@ namespace IngameScript
                 AbortNav(false);
                 CommandReloadConfig();
             }
+            else if (args[0].Equals("maxthrustoverrideratio") || args[0].Equals("thrustratio"))
+            {
+                if (args.Length < 2)
+                {
+                    optionalInfo = "New override ratio argument not found!";
+                    return;
+                }
+
+                double result;
+                if (!double.TryParse(args[1], out result))
+                {
+                    optionalInfo = "Could not parse new override ratio";
+                    return;
+                }
+
+                config.MaxThrustOverrideRatio = result;
+                SaveCustomDataConfig();
+
+                if (cruiseController is IVariableMaxOverrideThrustController)
+                {
+                    if (cruiseController is SpeedMatch)
+                    {
+                        ((SpeedMatch)cruiseController).MaxThrustOverrideRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)result;
+                    }
+                    else
+                    {
+                        ((IVariableMaxOverrideThrustController)cruiseController).MaxThrustOverrideRatio = (float)result;
+                    }
+                }
+
+                optionalInfo = $"New thrust ratio set {result:0.##}";
+            }
 
             bool cmdMatched = false;
 
@@ -169,7 +201,7 @@ namespace IngameScript
             NavMode = NavModeEnum.Cruise;
             cruiseController = new RetroCruiseControl(target, speed, aimController, controller, gyros, thrusters)
             {
-                maxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
+                MaxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
                 decelStartMarginSeconds = config.Ship180TurnTimeSeconds * 1.5,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
@@ -193,7 +225,7 @@ namespace IngameScript
             NavMode = NavModeEnum.Retroburn;
             cruiseController = new Retroburn(aimController, controller, gyros, thrusters)
             {
-                maxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
+                MaxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retroburn}";
@@ -273,7 +305,7 @@ namespace IngameScript
             NavMode = NavModeEnum.SpeedMatch;
             cruiseController = new SpeedMatch(targetId, wcApi, controller, thrusters, Me)
             {
-                maxThrustOverrideRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)config.MaxThrustOverrideRatio,
+                MaxThrustOverrideRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)config.MaxThrustOverrideRatio,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.SpeedMatch}|{targetId}";

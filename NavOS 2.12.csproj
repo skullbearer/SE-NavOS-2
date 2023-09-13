@@ -42,6 +42,7 @@
     <Compile Include="Commands.cs" />
     <Compile Include="CoreSystemsPbApi.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Navigation\IVariableMaxOverrideThrustController.cs" />
     <Compile Include="Navigation\Orient.cs" />
     <Compile Include="Navigation\OrientControllerBase.cs" />
     <Compile Include="Navigation\Retroburn.cs" />

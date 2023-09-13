@@ -410,6 +410,7 @@ Match
 Orient <GPS>
 Abort
 Reload (the config)
+ThrustRatio <ratio0to1>
 ";
             string avgRtStr = profiler.RunningAverageMs.ToString("0.0000");
 
