@@ -107,23 +107,39 @@ namespace IngameScript
                 }
                 else if (args[2].StartsWith("gps:", StringComparison.OrdinalIgnoreCase))
                 {
-                    string[] coords = argument.Substring(argument.IndexOf("GPS:")).Split(':');
+                    try
+                    {
+                        string[] coords = argument.Substring(argument.IndexOf("GPS:")).Split(':');
 
-                    double x = double.Parse(coords[2]);
-                    double y = double.Parse(coords[3]);
-                    double z = double.Parse(coords[4]);
+                        double x = double.Parse(coords[2]);
+                        double y = double.Parse(coords[3]);
+                        double z = double.Parse(coords[4]);
 
-                    target = new Vector3D(x, y, z);
+                        target = new Vector3D(x, y, z);
+                    }
+                    catch (Exception e)
+                    {
+                        optionalInfo = "Error occurred while parsing gps";
+                        return;
+                    }
                 }
                 else
                 {
-                    string[] coords = args[2].Split(':');
+                    try
+                    {
+                        string[] coords = args[2].Split(':');
 
-                    double x = double.Parse(coords[0]);
-                    double y = double.Parse(coords[1]);
-                    double z = double.Parse(coords[2]);
+                        double x = double.Parse(coords[0]);
+                        double y = double.Parse(coords[1]);
+                        double z = double.Parse(coords[2]);
 
-                    target = new Vector3D(x, y, z);
+                        target = new Vector3D(x, y, z);
+                    }
+                    catch (Exception e)
+                    {
+                        optionalInfo = "Error occurred while parsing coords";
+                        return;
+                    }
                 }
 
                 Vector3D offsetTarget = Vector3D.Zero;
