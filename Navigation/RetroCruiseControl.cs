@@ -311,8 +311,8 @@ namespace IngameScript.Navigation
             //stopping distance: timeToStop * (currentSpeed / 2)
             //or also: currentSpeed^2 / (2 * acceleration)
             stopTime = mySpeed / forwardAccelPremultiplied * stopTimeAndDistanceMulti;
-            stopDist = stopTime * (mySpeed * 0.5);
-            //stopDist = (mySpeed * mySpeed) / (2 * forwardAccel);
+            //stopDist = stopTime * (mySpeed * 0.5);
+            stopDist = (mySpeed * mySpeed) / (2 * forwardAccel);
 
             timeToStartDecel = ((distanceToTarget - stopDist) / mySpeed) + (TICK * 2);
             //double distToStartDecel = distanceToTarget - stopDist;
