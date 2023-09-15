@@ -156,10 +156,8 @@ namespace IngameScript.Navigation
 
             Stage = RetroCruiseStage.None;
             gridMass = controller.CalculateShipMass().PhysicalMass;
-            forwardThrust = this.thrusters[Direction.Forward].Where(t => t.Item1.IsWorking).Sum(t => t.Item1.MaxEffectiveThrust);
-            forwardThrustInv = 1 / forwardThrust;
-            forwardAccel = forwardThrust / gridMass;
-            forwardAccelPremultiplied = forwardAccel * MaxThrustOverrideRatio;
+
+            UpdateForwardThrustAndAccel();
         }
 
         public void AppendStatus(StringBuilder strb)
@@ -172,32 +170,30 @@ namespace IngameScript.Navigation
         private void UpdateStatusStrb()
         {
             statusStrb.Clear();
-            statusStrb.AppendLine("\n-- RetroCruiseControl Status --\n");
+            statusStrb.AppendLine("\n-- Cruise Status --\n");
 
             if (timeToStartDecel < 0 || Vector3D.Dot(myVelocity, targetDirection) < 0)
             {
                 statusStrb.Append($"!! Overshoot Warning !!\n\n");
             }
 
-            const string stage1 = "Cancel Perpendicular Speed";
+            const string stage1 = "> Cancel Perpendicular Speed\n";
 
             switch (Stage)
             {
                 case RetroCruiseStage.CancelPerpendicularVelocity:
-                    statusStrb.AppendLine($"> {stage1}\nAccelerate {accelTime:0.0}\nCruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
-                    break;
                 case RetroCruiseStage.OrientAndAccelerate:
-                    statusStrb.AppendLine($"{((byte)Stage > 1 ? "" : "")} {stage1}\n> Accelerate {accelTime:0.0}\nCruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
+                    statusStrb.AppendLine($"{((byte)Stage == 1 ? $"{stage1}" : $">{stage1}>")}> Accelerate {accelTime:0.0}\nCruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
                     break;
                 case RetroCruiseStage.OrientAndDecelerate:
-                    statusStrb.AppendLine($">> {stage1}\n>> Accelerate {accelTime:0.0}");
+                    statusStrb.AppendLine($">{stage1}>> Accelerate {accelTime:0.0}");
                     if (!decelerating)
                         statusStrb.AppendLine($"> Cruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
                     else
                         statusStrb.AppendLine($">> Cruise {cruiseTime:0.0}\n> Decelerate {actualStopTime:0.0}\nStop");
                     break;
                 case RetroCruiseStage.DecelerateNoOrient:
-                    statusStrb.AppendLine($">> {stage1}\n>> Accelerate {accelTime:0.0}\n>> Cruise {cruiseTime:0.0}\n>> Decelerate {actualStopTime:0.0}\n> Stop");
+                    statusStrb.AppendLine($">{stage1}>> Accelerate {accelTime:0.0}\n>> Cruise {cruiseTime:0.0}\n>> Decelerate {actualStopTime:0.0}\n> Stop");
                     break;
             }
 
@@ -402,7 +398,7 @@ namespace IngameScript.Navigation
         private void UpdateForwardThrustAndAccel()
         {
             forwardThrust = thrusters[Direction.Forward].Where(t => t.Item1.IsWorking).Sum(t => t.Item1.MaxEffectiveThrust);
-            forwardThrustInv = 1 / forwardThrust;
+            forwardThrustInv = 1f / forwardThrust;
             forwardAccel = forwardThrust / gridMass;
             forwardAccelPremultiplied = forwardAccel * MaxThrustOverrideRatio;
         }

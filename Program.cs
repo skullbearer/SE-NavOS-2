@@ -80,7 +80,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.13-dev2";
+        public const string versionStr = "2.13-dev3";
         public static VersionInfo versionInfo = new VersionInfo(2, 13, 0);
 
         private Config config;
