@@ -65,12 +65,7 @@ namespace IngameScript
 
         public string ToString(bool hidePatchNumberIfZero)
         {
-            if (hidePatchNumberIfZero && Patch == 0)
-            {
-                return $"{Major}.{Minor}";
-            }
-
-            return this.ToString();
+            return hidePatchNumberIfZero && Patch == 0 ? $"{Major}.{Minor}" : this.ToString();
         }
 
         public static bool operator <(VersionInfo x, VersionInfo y)

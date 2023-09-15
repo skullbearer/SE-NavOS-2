@@ -46,13 +46,6 @@ namespace IngameScript.Navigation
         private WcPbApi wcApi;
         private IMyTerminalBlock pb;
 
-        //private float forwardThrust;
-        //private float backwardThrust;
-        //private float rightThrust;
-        //private float leftThrust;
-        //private float upThrust;
-        //private float downThrust;
-
         private Dictionary<Direction, MyTuple<IMyThrust, float>[]> thrusters;
         private int counter = 0;
         private Dictionary<MyDetectedEntityInfo, float> threats = new Dictionary<MyDetectedEntityInfo, float>();
@@ -250,7 +243,6 @@ namespace IngameScript.Navigation
         public void Abort()
         {
             ResetThrustOverrides();
-
             CruiseTerminated.Invoke(this, "Aborted");
         }
     }

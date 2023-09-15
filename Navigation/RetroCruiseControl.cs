@@ -179,23 +179,25 @@ namespace IngameScript.Navigation
                 statusStrb.Append($"!! Overshoot Warning !!\n\n");
             }
 
+            const string stage1 = "Cancel Perpendicular Speed";
+
             switch (Stage)
             {
                 case RetroCruiseStage.CancelPerpendicularVelocity:
-                    statusStrb.AppendLine($"> Cancel Perpendicular Speed\nAccelerate {accelTime:0.0}\nCruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
+                    statusStrb.AppendLine($"> {stage1}\nAccelerate {accelTime:0.0}\nCruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
                     break;
                 case RetroCruiseStage.OrientAndAccelerate:
-                    statusStrb.AppendLine($">> Cancel Perpendicular Speed\n> Accelerate {accelTime:0.0}\nCruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
+                    statusStrb.AppendLine($"{((byte)Stage > 1 ? "" : "")} {stage1}\n> Accelerate {accelTime:0.0}\nCruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
                     break;
                 case RetroCruiseStage.OrientAndDecelerate:
-                    statusStrb.AppendLine($">> Cancel Perpendicular Speed\n>> Accelerate {accelTime:0.0}");
+                    statusStrb.AppendLine($">> {stage1}\n>> Accelerate {accelTime:0.0}");
                     if (!decelerating)
                         statusStrb.AppendLine($"> Cruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
                     else
                         statusStrb.AppendLine($">> Cruise {cruiseTime:0.0}\n> Decelerate {actualStopTime:0.0}\nStop");
                     break;
                 case RetroCruiseStage.DecelerateNoOrient:
-                    statusStrb.AppendLine($">> Cancel Perpendicular Speed\n>> Accelerate {accelTime:0.0}\n>> Cruise {cruiseTime:0.0}\n>> Decelerate {actualStopTime:0.0}\n> Stop");
+                    statusStrb.AppendLine($">> {stage1}\n>> Accelerate {accelTime:0.0}\n>> Cruise {cruiseTime:0.0}\n>> Decelerate {actualStopTime:0.0}\n> Stop");
                     break;
             }
 
@@ -419,20 +421,18 @@ namespace IngameScript.Navigation
         {
             foreach (var thruster in thrusters[Direction.Backward])
                 thruster.Item1.ThrustOverridePercentage = 0;
-            foreach (var thruster in thrusters[Direction.Right])
-                thruster.Item1.ThrustOverridePercentage = 0;
-            foreach (var thruster in thrusters[Direction.Left])
-                thruster.Item1.ThrustOverridePercentage = 0;
-            foreach (var thruster in thrusters[Direction.Up])
-                thruster.Item1.ThrustOverridePercentage = 0;
-            foreach (var thruster in thrusters[Direction.Down])
-                thruster.Item1.ThrustOverridePercentage = 0;
+            ResetThrustOverridesSides();
         }
 
         private void ResetThrustOverridesExceptBack()
         {
             foreach (var thruster in thrusters[Direction.Forward])
                 thruster.Item1.ThrustOverridePercentage = 0;
+            ResetThrustOverridesSides();
+        }
+
+        private void ResetThrustOverridesSides()
+        {
             foreach (var thruster in thrusters[Direction.Right])
                 thruster.Item1.ThrustOverridePercentage = 0;
             foreach (var thruster in thrusters[Direction.Left])
@@ -649,26 +649,16 @@ namespace IngameScript.Navigation
             //don't do unnecessary sqrt for controller.matrix.forward because its already a unit vector
             double cos = ShipController.WorldMatrix.Forward.Dot(vec) / vec.Length();
             double angle = Math.Acos(cos);
-            if (angle == double.NaN)
-            {
-                return 0;
-            }
-            return angle;
+            return angle != double.NaN ? angle : 0;
         }
 
         private void Complete()
         {
-            ResetThrustOverrides();
-            TurnOnAllThrusters();
-
-            ResetGyroOverride();
-
             SetDampenerState(true);
-
-            CruiseTerminated.Invoke(this, distanceToTarget < 10 ? "Destination Reached" : "Terminated");
+            Terminate(distanceToTarget < 10 ? "Destination Reached" : "Terminated");
         }
 
-        public void Abort()
+        public void Terminate(string reason)
         {
             ResetThrustOverrides();
             TurnOnAllThrusters();
@@ -677,19 +667,10 @@ namespace IngameScript.Navigation
 
             Stage = RetroCruiseStage.Aborted;
 
-            CruiseTerminated.Invoke(this, "Aborted");
+            CruiseTerminated.Invoke(this, reason);
         }
 
-        protected override void OnNoFunctionalGyrosLeft()
-        {
-            ResetThrustOverrides();
-            TurnOnAllThrusters();
-
-            ResetGyroOverride();
-
-            Stage = RetroCruiseStage.Aborted;
-
-            CruiseTerminated.Invoke(this, "No functional gyros found");
-        }
+        public void Abort() => Terminate("Aborted");
+        protected override void OnNoFunctionalGyrosLeft() => Terminate("No functional gyros found");
     }
 }

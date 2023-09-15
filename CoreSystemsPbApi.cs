@@ -16,47 +16,47 @@ namespace IngameScript
         private Action<ICollection<MyDefinitionId>> _getCoreWeapons;
         private Action<ICollection<MyDefinitionId>> _getCoreStaticLaunchers;
         private Action<ICollection<MyDefinitionId>> _getCoreTurrets;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, IDictionary<string, int>, bool> _getBlockWeaponMap;
+        private Func<IMyTerminalBlock, IDictionary<string, int>, bool> _getBlockWeaponMap;
         private Func<long, MyTuple<bool, int, int>> _getProjectilesLockedOn;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, IDictionary<MyDetectedEntityInfo, float>> _getSortedThreats;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, ICollection<Sandbox.ModAPI.Ingame.MyDetectedEntityInfo>> _getObstructions;
+        private Action<IMyTerminalBlock, IDictionary<MyDetectedEntityInfo, float>> _getSortedThreats;
+        private Action<IMyTerminalBlock, ICollection<MyDetectedEntityInfo>> _getObstructions;
         private Func<long, int, MyDetectedEntityInfo> _getAiFocus;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, long, int, bool> _setAiFocus;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, long, bool> _releaseAiFocus;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, MyDetectedEntityInfo> _getWeaponTarget;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, long, int> _setWeaponTarget;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, bool, int> _fireWeaponOnce;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, bool, bool, int> _toggleWeaponFire;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, bool, bool, bool> _isWeaponReadyToFire;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, float> _getMaxWeaponRange;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, ICollection<string>, int, bool> _getTurretTargetTypes;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, ICollection<string>, int> _setTurretTargetTypes;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, float> _setBlockTrackingRange;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, long, int, bool> _isTargetAligned;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, long, int, MyTuple<bool, Vector3D?>> _isTargetAlignedExtended;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, long, int, bool> _canShootTarget;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, long, int, Vector3D?> _getPredictedTargetPos;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, float> _getHeatLevel;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, float> _currentPowerConsumption;
+        private Func<IMyTerminalBlock, long, int, bool> _setAiFocus;
+        private Func<IMyTerminalBlock, long, bool> _releaseAiFocus;
+        private Func<IMyTerminalBlock, int, MyDetectedEntityInfo> _getWeaponTarget;
+        private Action<IMyTerminalBlock, long, int> _setWeaponTarget;
+        private Action<IMyTerminalBlock, bool, int> _fireWeaponOnce;
+        private Action<IMyTerminalBlock, bool, bool, int> _toggleWeaponFire;
+        private Func<IMyTerminalBlock, int, bool, bool, bool> _isWeaponReadyToFire;
+        private Func<IMyTerminalBlock, int, float> _getMaxWeaponRange;
+        private Func<IMyTerminalBlock, ICollection<string>, int, bool> _getTurretTargetTypes;
+        private Action<IMyTerminalBlock, ICollection<string>, int> _setTurretTargetTypes;
+        private Action<IMyTerminalBlock, float> _setBlockTrackingRange;
+        private Func<IMyTerminalBlock, long, int, bool> _isTargetAligned;
+        private Func<IMyTerminalBlock, long, int, MyTuple<bool, Vector3D?>> _isTargetAlignedExtended;
+        private Func<IMyTerminalBlock, long, int, bool> _canShootTarget;
+        private Func<IMyTerminalBlock, long, int, Vector3D?> _getPredictedTargetPos;
+        private Func<IMyTerminalBlock, float> _getHeatLevel;
+        private Func<IMyTerminalBlock, float> _currentPowerConsumption;
         private Func<MyDefinitionId, float> _getMaxPower;
         private Func<long, bool> _hasGridAi;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, bool> _hasCoreWeapon;
+        private Func<IMyTerminalBlock, bool> _hasCoreWeapon;
         private Func<long, float> _getOptimalDps;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, string> _getActiveAmmo;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, string> _setActiveAmmo;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, Action<long, int, ulong, long, Vector3D, bool>> _monitorProjectile;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, Action<long, int, ulong, long, Vector3D, bool>> _unMonitorProjectile;
+        private Func<IMyTerminalBlock, int, string> _getActiveAmmo;
+        private Action<IMyTerminalBlock, int, string> _setActiveAmmo;
+        private Action<IMyTerminalBlock, int, Action<long, int, ulong, long, Vector3D, bool>> _monitorProjectile;
+        private Action<IMyTerminalBlock, int, Action<long, int, ulong, long, Vector3D, bool>> _unMonitorProjectile;
         private Func<ulong, MyTuple<Vector3D, Vector3D, float, float, long, string>> _getProjectileState;
         private Func<long, float> _getConstructEffectiveDps;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, long> _getPlayerController;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, Matrix> _getWeaponAzimuthMatrix;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, Matrix> _getWeaponElevationMatrix;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, long, bool, bool, bool> _isTargetValid;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, MyTuple<Vector3D, Vector3D>> _getWeaponScope;
-        private Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, MyTuple<bool, bool>> _isInRange;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, Action<int, bool>> _monitorEvents;
-        private Action<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int, Action<int, bool>> _unmonitorEvents;
-        public bool Activate(Sandbox.ModAPI.Ingame.IMyTerminalBlock pbBlock)
+        private Func<IMyTerminalBlock, long> _getPlayerController;
+        private Func<IMyTerminalBlock, int, Matrix> _getWeaponAzimuthMatrix;
+        private Func<IMyTerminalBlock, int, Matrix> _getWeaponElevationMatrix;
+        private Func<IMyTerminalBlock, long, bool, bool, bool> _isTargetValid;
+        private Func<IMyTerminalBlock, int, MyTuple<Vector3D, Vector3D>> _getWeaponScope;
+        private Func<IMyTerminalBlock, MyTuple<bool, bool>> _isInRange;
+        private Action<IMyTerminalBlock, int, Action<int, bool>> _monitorEvents;
+        private Action<IMyTerminalBlock, int, Action<int, bool>> _unmonitorEvents;
+        public bool Activate(IMyTerminalBlock pbBlock)
         {
             var dict = pbBlock.GetProperty("WcPbAPI")?.As<IReadOnlyDictionary<string, Delegate>>().GetValue(pbBlock);
             if (dict == null) throw new Exception("WcPbAPI failed to activate");
@@ -133,113 +133,81 @@ namespace IngameScript
         }
 
         public void GetAllCoreWeapons(ICollection<MyDefinitionId> collection) => _getCoreWeapons?.Invoke(collection);
-
         public void GetAllCoreStaticLaunchers(ICollection<MyDefinitionId> collection) =>
             _getCoreStaticLaunchers?.Invoke(collection);
-
         public void GetAllCoreTurrets(ICollection<MyDefinitionId> collection) => _getCoreTurrets?.Invoke(collection);
-
-        public bool GetBlockWeaponMap(Sandbox.ModAPI.Ingame.IMyTerminalBlock weaponBlock, IDictionary<string, int> collection) =>
+        public bool GetBlockWeaponMap(IMyTerminalBlock weaponBlock, IDictionary<string, int> collection) =>
             _getBlockWeaponMap?.Invoke(weaponBlock, collection) ?? false;
-
         public MyTuple<bool, int, int> GetProjectilesLockedOn(long victim) =>
             _getProjectilesLockedOn?.Invoke(victim) ?? new MyTuple<bool, int, int>();
-
-        public void GetSortedThreats(Sandbox.ModAPI.Ingame.IMyTerminalBlock pBlock, IDictionary<MyDetectedEntityInfo, float> collection) =>
+        public void GetSortedThreats(IMyTerminalBlock pBlock, IDictionary<MyDetectedEntityInfo, float> collection) =>
             _getSortedThreats?.Invoke(pBlock, collection);
-        public void GetObstructions(Sandbox.ModAPI.Ingame.IMyTerminalBlock pBlock, ICollection<Sandbox.ModAPI.Ingame.MyDetectedEntityInfo> collection) =>
+        public void GetObstructions(IMyTerminalBlock pBlock, ICollection<MyDetectedEntityInfo> collection) =>
             _getObstructions?.Invoke(pBlock, collection);
         public MyDetectedEntityInfo? GetAiFocus(long shooter, int priority = 0) => _getAiFocus?.Invoke(shooter, priority);
-
-        public bool SetAiFocus(Sandbox.ModAPI.Ingame.IMyTerminalBlock pBlock, long target, int priority = 0) =>
+        public bool SetAiFocus(IMyTerminalBlock pBlock, long target, int priority = 0) =>
             _setAiFocus?.Invoke(pBlock, target, priority) ?? false;
-        public bool ReleaseAiFocus(Sandbox.ModAPI.Ingame.IMyTerminalBlock pBlock, long playerId) =>
+        public bool ReleaseAiFocus(IMyTerminalBlock pBlock, long playerId) =>
             _releaseAiFocus?.Invoke(pBlock, playerId) ?? false;
-        public MyDetectedEntityInfo? GetWeaponTarget(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId = 0) =>
+        public MyDetectedEntityInfo? GetWeaponTarget(IMyTerminalBlock weapon, int weaponId = 0) =>
             _getWeaponTarget?.Invoke(weapon, weaponId);
-
-        public void SetWeaponTarget(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, long target, int weaponId = 0) =>
+        public void SetWeaponTarget(IMyTerminalBlock weapon, long target, int weaponId = 0) =>
             _setWeaponTarget?.Invoke(weapon, target, weaponId);
-
-        public void FireWeaponOnce(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, bool allWeapons = true, int weaponId = 0) =>
+        public void FireWeaponOnce(IMyTerminalBlock weapon, bool allWeapons = true, int weaponId = 0) =>
             _fireWeaponOnce?.Invoke(weapon, allWeapons, weaponId);
-
-        public void ToggleWeaponFire(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, bool on, bool allWeapons, int weaponId = 0) =>
+        public void ToggleWeaponFire(IMyTerminalBlock weapon, bool on, bool allWeapons, int weaponId = 0) =>
             _toggleWeaponFire?.Invoke(weapon, on, allWeapons, weaponId);
-
-        public bool IsWeaponReadyToFire(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId = 0, bool anyWeaponReady = true,
+        public bool IsWeaponReadyToFire(IMyTerminalBlock weapon, int weaponId = 0, bool anyWeaponReady = true,
             bool shootReady = false) =>
             _isWeaponReadyToFire?.Invoke(weapon, weaponId, anyWeaponReady, shootReady) ?? false;
-
-        public float GetMaxWeaponRange(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId) =>
+        public float GetMaxWeaponRange(IMyTerminalBlock weapon, int weaponId) =>
             _getMaxWeaponRange?.Invoke(weapon, weaponId) ?? 0f;
-
-        public bool GetTurretTargetTypes(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, IList<string> collection, int weaponId = 0) =>
+        public bool GetTurretTargetTypes(IMyTerminalBlock weapon, IList<string> collection, int weaponId = 0) =>
             _getTurretTargetTypes?.Invoke(weapon, collection, weaponId) ?? false;
-
-        public void SetTurretTargetTypes(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, IList<string> collection, int weaponId = 0) =>
+        public void SetTurretTargetTypes(IMyTerminalBlock weapon, IList<string> collection, int weaponId = 0) =>
             _setTurretTargetTypes?.Invoke(weapon, collection, weaponId);
-
-        public void SetBlockTrackingRange(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, float range) =>
+        public void SetBlockTrackingRange(IMyTerminalBlock weapon, float range) =>
             _setBlockTrackingRange?.Invoke(weapon, range);
-
-        public bool IsTargetAligned(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, long targetEnt, int weaponId) =>
+        public bool IsTargetAligned(IMyTerminalBlock weapon, long targetEnt, int weaponId) =>
             _isTargetAligned?.Invoke(weapon, targetEnt, weaponId) ?? false;
-
-        public MyTuple<bool, Vector3D?> IsTargetAlignedExtended(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, long targetEnt, int weaponId) =>
+        public MyTuple<bool, Vector3D?> IsTargetAlignedExtended(IMyTerminalBlock weapon, long targetEnt, int weaponId) =>
             _isTargetAlignedExtended?.Invoke(weapon, targetEnt, weaponId) ?? new MyTuple<bool, Vector3D?>();
-
-        public bool CanShootTarget(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, long targetEnt, int weaponId) =>
+        public bool CanShootTarget(IMyTerminalBlock weapon, long targetEnt, int weaponId) =>
             _canShootTarget?.Invoke(weapon, targetEnt, weaponId) ?? false;
-
-        public Vector3D? GetPredictedTargetPosition(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, long targetEnt, int weaponId) =>
+        public Vector3D? GetPredictedTargetPosition(IMyTerminalBlock weapon, long targetEnt, int weaponId) =>
             _getPredictedTargetPos?.Invoke(weapon, targetEnt, weaponId) ?? null;
-
-        public float GetHeatLevel(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon) => _getHeatLevel?.Invoke(weapon) ?? 0f;
-        public float GetCurrentPower(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon) => _currentPowerConsumption?.Invoke(weapon) ?? 0f;
+        public float GetHeatLevel(IMyTerminalBlock weapon) => _getHeatLevel?.Invoke(weapon) ?? 0f;
+        public float GetCurrentPower(IMyTerminalBlock weapon) => _currentPowerConsumption?.Invoke(weapon) ?? 0f;
         public float GetMaxPower(MyDefinitionId weaponDef) => _getMaxPower?.Invoke(weaponDef) ?? 0f;
         public bool HasGridAi(long entity) => _hasGridAi?.Invoke(entity) ?? false;
-        public bool HasCoreWeapon(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon) => _hasCoreWeapon?.Invoke(weapon) ?? false;
+        public bool HasCoreWeapon(IMyTerminalBlock weapon) => _hasCoreWeapon?.Invoke(weapon) ?? false;
         public float GetOptimalDps(long entity) => _getOptimalDps?.Invoke(entity) ?? 0f;
-
-        public string GetActiveAmmo(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId) =>
+        public string GetActiveAmmo(IMyTerminalBlock weapon, int weaponId) =>
             _getActiveAmmo?.Invoke(weapon, weaponId) ?? null;
-
-        public void SetActiveAmmo(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId, string ammoType) =>
+        public void SetActiveAmmo(IMyTerminalBlock weapon, int weaponId, string ammoType) =>
             _setActiveAmmo?.Invoke(weapon, weaponId, ammoType);
-
-        public void MonitorProjectileCallback(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId, Action<long, int, ulong, long, Vector3D, bool> action) =>
+        public void MonitorProjectileCallback(IMyTerminalBlock weapon, int weaponId, Action<long, int, ulong, long, Vector3D, bool> action) =>
             _monitorProjectile?.Invoke(weapon, weaponId, action);
-
-        public void UnMonitorProjectileCallback(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId, Action<long, int, ulong, long, Vector3D, bool> action) =>
+        public void UnMonitorProjectileCallback(IMyTerminalBlock weapon, int weaponId, Action<long, int, ulong, long, Vector3D, bool> action) =>
             _unMonitorProjectile?.Invoke(weapon, weaponId, action);
-
         public MyTuple<Vector3D, Vector3D, float, float, long, string> GetProjectileState(ulong projectileId) =>
             _getProjectileState?.Invoke(projectileId) ?? new MyTuple<Vector3D, Vector3D, float, float, long, string>();
-
         public float GetConstructEffectiveDps(long entity) => _getConstructEffectiveDps?.Invoke(entity) ?? 0f;
-
-        public long GetPlayerController(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon) => _getPlayerController?.Invoke(weapon) ?? -1;
-
-        public Matrix GetWeaponAzimuthMatrix(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId) =>
+        public long GetPlayerController(IMyTerminalBlock weapon) => _getPlayerController?.Invoke(weapon) ?? -1;
+        public Matrix GetWeaponAzimuthMatrix(IMyTerminalBlock weapon, int weaponId) =>
             _getWeaponAzimuthMatrix?.Invoke(weapon, weaponId) ?? Matrix.Zero;
-
-        public Matrix GetWeaponElevationMatrix(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId) =>
+        public Matrix GetWeaponElevationMatrix(IMyTerminalBlock weapon, int weaponId) =>
             _getWeaponElevationMatrix?.Invoke(weapon, weaponId) ?? Matrix.Zero;
-
-        public bool IsTargetValid(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, long targetId, bool onlyThreats, bool checkRelations) =>
+        public bool IsTargetValid(IMyTerminalBlock weapon, long targetId, bool onlyThreats, bool checkRelations) =>
             _isTargetValid?.Invoke(weapon, targetId, onlyThreats, checkRelations) ?? false;
-
-        public MyTuple<Vector3D, Vector3D> GetWeaponScope(Sandbox.ModAPI.Ingame.IMyTerminalBlock weapon, int weaponId) =>
+        public MyTuple<Vector3D, Vector3D> GetWeaponScope(IMyTerminalBlock weapon, int weaponId) =>
             _getWeaponScope?.Invoke(weapon, weaponId) ?? new MyTuple<Vector3D, Vector3D>();
         // terminalBlock, Threat, Other, Something 
-        public MyTuple<bool, bool> IsInRange(Sandbox.ModAPI.Ingame.IMyTerminalBlock block) =>
+        public MyTuple<bool, bool> IsInRange(IMyTerminalBlock block) =>
             _isInRange?.Invoke(block) ?? new MyTuple<bool, bool>();
-        public void MonitorEvents(Sandbox.ModAPI.Ingame.IMyTerminalBlock entity, int partId, Action<int, bool> action) =>
+        public void MonitorEvents(IMyTerminalBlock entity, int partId, Action<int, bool> action) =>
             _monitorEvents?.Invoke(entity, partId, action);
-
-        public void UnMonitorEvents(Sandbox.ModAPI.Ingame.IMyTerminalBlock entity, int partId, Action<int, bool> action) =>
+        public void UnMonitorEvents(IMyTerminalBlock entity, int partId, Action<int, bool> action) =>
             _unmonitorEvents?.Invoke(entity, partId, action);
-
     }
 }

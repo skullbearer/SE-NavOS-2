@@ -91,7 +91,7 @@ namespace IngameScript.Navigation
                 ResetThrustOverrides();
                 ResetGyroOverride();
                 ShipController.DampenersOverride = true;
-                RaiseCruiseTerminated(this, $"Speed is less than {DAMPENER_TOLERANCE} m/s");
+                Terminate(this, $"Speed is less than {DAMPENER_TOLERANCE} m/s");
             }
         }
 

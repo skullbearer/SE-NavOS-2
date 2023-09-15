@@ -44,15 +44,7 @@ namespace IngameScript.Navigation
             CruiseTerminated.Invoke(this, reason);
         }
 
-        public void Abort()
-        {
-            ResetGyroOverride();
-            CruiseTerminated.Invoke(this, $"Aborted");
-        }
-
-        protected override void OnNoFunctionalGyrosLeft()
-        {
-            Terminate("No functional gyros found");
-        }
+        public void Abort() => Terminate("Aborted");
+        protected override void OnNoFunctionalGyrosLeft() => Terminate("No functional gyros found");
     }
 }

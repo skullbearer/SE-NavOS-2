@@ -28,28 +28,20 @@ namespace IngameScript.Navigation
                 availableGyros.Enqueue(gyro);
             }
 
-            if (GyroInUse == null || GyroInUse.Closed || !GyroInUse.IsFunctional)
-            {
-                while (availableGyros.Count > 0)
-                {
-                    GyroInUse = availableGyros.Dequeue();
-                    if (GyroInUse != null && !GyroInUse.Closed && GyroInUse.IsFunctional)
-                    {
-                        break;
-                    }
-                }
-
-                if (GyroInUse == null || GyroInUse.Closed || !GyroInUse.IsFunctional)
-                {
-                    OnNoFunctionalGyrosLeft();
-                    return;
-                }
-
-                GyroInUse.Enabled = true;
-            }
+            EnsureGyroIsValid();
         }
 
         protected void Orient(Vector3D forward)
+        {
+            if (!EnsureGyroIsValid())
+            {
+                return;
+            }
+
+            AimControl.Orient(forward, GyroInUse, ShipController.WorldMatrix);
+        }
+
+        private bool EnsureGyroIsValid()
         {
             if (GyroInUse == null || GyroInUse.Closed || !GyroInUse.IsFunctional)
             {
@@ -65,13 +57,13 @@ namespace IngameScript.Navigation
                 if (GyroInUse == null || GyroInUse.Closed || !GyroInUse.IsFunctional)
                 {
                     OnNoFunctionalGyrosLeft();
-                    return;
+                    return false;
                 }
 
                 GyroInUse.Enabled = true;
             }
 
-            AimControl.Orient(forward, GyroInUse, ShipController.WorldMatrix);
+            return true;
         }
 
         protected void ResetGyroOverride()

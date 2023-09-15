@@ -36,25 +36,17 @@ namespace IngameScript.Navigation
             {
                 ResetGyroOverride();
 
-                RaiseCruiseTerminated(this, $"Speed is less than {terminateSpeed:0.#} m/s");
+                Terminate(this, $"Speed is less than {terminateSpeed:0.#} m/s");
             }
         }
 
-        public virtual void Abort()
+        protected void Terminate(ICruiseController source, string reason)
         {
             ResetGyroOverride();
-
-            RaiseCruiseTerminated(this, $"Aborted");
-        }
-
-        protected void RaiseCruiseTerminated(ICruiseController source, string reason)
-        {
             CruiseTerminated.Invoke(source, reason);
         }
 
-        protected override void OnNoFunctionalGyrosLeft()
-        {
-            RaiseCruiseTerminated(this, "No functional gyros found");
-        }
+        public virtual void Abort() => Terminate(this, $"Aborted");
+        protected override void OnNoFunctionalGyrosLeft() => Terminate(this, "No functional gyros found");
     }
 }
