@@ -12,6 +12,14 @@ namespace IngameScript.Navigation
 {
     internal class SpeedMatch : ICruiseController, IVariableMaxOverrideThrustController
     {
+        private enum TargetAcquisitionMode
+        {
+            None = 0,
+            AiFocus = 1,
+            SortedThreat = 2,
+            Obstruction = 3,
+        }
+
         public event CruiseTerminateEventDelegate CruiseTerminated;
 
         public string Name => nameof(SpeedMatch);
@@ -48,9 +56,14 @@ namespace IngameScript.Navigation
         private Dictionary<Direction, MyTuple<IMyThrust, float>[]> thrusters;
         private int counter = 0;
         private Dictionary<MyDetectedEntityInfo, float> threats = new Dictionary<MyDetectedEntityInfo, float>();
+        private List<MyDetectedEntityInfo> obstructions = new List<MyDetectedEntityInfo>();
         private Vector3D relativeVelocity;
 
         private MyDetectedEntityInfo? target;
+        private TargetAcquisitionMode targetInfoMode;
+
+        private bool counter10 = false;
+        private bool counter30 = false;
 
         public SpeedMatch(
             long targetEntityId,
@@ -82,41 +95,88 @@ namespace IngameScript.Navigation
             }
         }
 
+        private bool TryGetTarget(out MyDetectedEntityInfo? target)
+        {
+            try
+            {
+                //support changing main target after running speedmatch
+                var aifocus = wcApi.GetAiFocus(pb.EntityId);
+                if (aifocus?.EntityId == targetEntityId)
+                {
+                    target = aifocus.Value;
+                    targetInfoMode = TargetAcquisitionMode.AiFocus;
+                    return true;
+                }
+                else
+                {
+                    MyDetectedEntityInfo? ent = null;
+                    wcApi.GetSortedThreats(pb, threats);
+                    foreach (var threat in threats.Keys)
+                    {
+                        if (threat.EntityId == targetEntityId)
+                        {
+                            ent = threat;
+                            targetInfoMode = TargetAcquisitionMode.SortedThreat;
+                            break;
+                        }
+                    }
+
+                    threats.Clear();
+
+                    if (ent.HasValue)
+                    {
+                        target = ent.Value;
+                        return true;
+                    }
+                }
+
+                if (counter30)
+                {
+                    MyDetectedEntityInfo? ent = null;
+                    //if neither methods found the target try looking thru obstructions
+                    wcApi.GetObstructions(pb, obstructions);
+                    foreach (var obs in obstructions)
+                    {
+                        if (obs.EntityId == targetEntityId)
+                        {
+                            ent = obs;
+                            targetInfoMode = TargetAcquisitionMode.Obstruction;
+                            break;
+                        }
+                    }
+
+
+                    if (ent.HasValue)
+                    {
+                        target = ent.Value;
+                        return true;
+                    }
+                }
+
+                targetInfoMode = TargetAcquisitionMode.None;
+                target = null;
+                return false;
+            }
+            catch
+            {
+                target = null;
+                return false;
+            }
+        }
+
         public void Run()
         {
             counter++;
-            if (counter % 10 == 0)
+            counter10 = counter % 10 == 0;
+            counter30 = counter % 30 == 0;
+
+            if (counter10)
             {
                 ShipController.DampenersOverride = false;
 
                 target = null;
 
-                try
-                {
-                    //support changing main target after running speedmatch
-                    threats.Clear();
-
-                    var aifocus = wcApi.GetAiFocus(pb.EntityId);
-                    if (aifocus?.EntityId == targetEntityId)
-                    {
-                        target = aifocus.Value;
-                    }
-                    else
-                    {
-                        wcApi.GetSortedThreats(pb, threats);
-                        foreach (var threat in threats.Keys)
-                        {
-                            if (threat.EntityId == targetEntityId)
-                            {
-                                target = threat;
-                                break;
-                            }
-                        }
-                    }
-                }
-                catch { }
-
-                if (!target.HasValue)
+                if (!TryGetTarget(out target))
                 {
                     ResetThrustOverrides();
                     return;
