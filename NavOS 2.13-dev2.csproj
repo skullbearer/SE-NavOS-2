@@ -52,7 +52,6 @@
     <Compile Include="Navigation\ICruiseController.cs" />
     <Compile Include="IAimController.cs" />
     <Compile Include="JitAim.cs" />
-    <Compile Include="MathEx.cs" />
     <Compile Include="Profiler.cs" />
     <Compile Include="MDK\Bootstrapper.cs" />
     <AdditionalFiles Include="MDK\MDK.options.props">
