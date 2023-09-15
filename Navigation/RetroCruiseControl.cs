@@ -274,6 +274,15 @@ namespace IngameScript.Navigation
             counter10 = counter % 10 == 0;
             counter30 = counter % 30 == 0;
             counter60 = counter % 60 == 0;
+
+            if (Stage == RetroCruiseStage.None)
+            {
+                ResetGyroOverride();
+                ResetThrustOverrides();
+                TurnOnAllThrusters();
+                UpdateThrust();
+            }
+
             if (counter10)
             {
                 UpdateStatusStrb();
@@ -289,14 +298,6 @@ namespace IngameScript.Navigation
             if (counter60)
             {
                 gridMass = ShipController.CalculateShipMass().PhysicalMass;
-                UpdateThrust();
-            }
-
-            if (Stage == RetroCruiseStage.None)
-            {
-                ResetGyroOverride();
-                ResetThrustOverrides();
-                TurnOnAllThrusters();
                 UpdateThrust();
             }
 
