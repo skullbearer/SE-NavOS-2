@@ -24,7 +24,7 @@ namespace IngameScript.Navigation
 
         public string Name => nameof(SpeedMatch);
         public IMyShipController ShipController { get; set; }
-        public float MaxThrustOverrideRatio
+        public float MaxThrustRatio
         {
             get { return _maxThrustOverrideRatio; }
             set
@@ -71,7 +71,7 @@ namespace IngameScript.Navigation
             this.thrusters = thrusters.ToDictionary(
                 kv => kv.Key,
                 kv => thrusters[kv.Key]
-                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustOverrideRatio))
+                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustRatio))
                     .ToArray());
             this.pb = programmableBlock;
         }
@@ -90,6 +90,8 @@ namespace IngameScript.Navigation
 
         private bool TryGetTarget(out MyDetectedEntityInfo? target)
         {
+            target = null;
+
             try
             {
                 //support changing main target after running speedmatch
@@ -147,12 +149,10 @@ namespace IngameScript.Navigation
                 }
 
                 targetInfoMode = TargetAcquisitionMode.None;
-                target = null;
                 return false;
             }
             catch
             {
-                target = null;
                 return false;
             }
         }
@@ -178,12 +178,7 @@ namespace IngameScript.Navigation
                 UpdateThrust();
             }
 
-            if (!target.HasValue)
-            {
-                return;
-            }
-
-            if (counter % thrustInterval == 0)
+            if (target.HasValue && counter % thrustInterval == 0)
             {
                 relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
                 Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
@@ -219,12 +214,8 @@ namespace IngameScript.Navigation
         private void ResetThrustOverrides()
         {
             foreach (var kv in thrusters)
-            {
                 for (int i = 0; i < kv.Value.Length; i++)
-                {
                     kv.Value[i].Item1.ThrustOverridePercentage = 0;
-                }
-            }
         }
 
         private void UpdateThrust()
@@ -234,7 +225,7 @@ namespace IngameScript.Navigation
                 for (int i = 0; i < kv.Value.Length; i++)
                 {
                     var val = kv.Value[i];
-                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustOverrideRatio;
+                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustRatio;
                     kv.Value[i] = val;
                 }
             }

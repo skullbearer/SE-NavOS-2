@@ -13,11 +13,24 @@ namespace IngameScript
         {
             if (Vector3D.IsZero(a))
                 return Vector3D.Zero;
-
             if (Vector3D.IsUnit(ref a))
                 return a;
-
             return Vector3D.Normalize(a);
+        }
+
+        public static StringBuilder AppendTime(this StringBuilder strb, double totalSeconds)
+        {
+            int minutes = (int)totalSeconds / 60;
+            totalSeconds %= 60;
+            strb.Append(minutes).Append(":").Append(totalSeconds.ToString("00.0"));
+            return strb;
+        }
+
+        public static string ToMinutesAndSeconds(double totalSeconds)
+        {
+            int minutes = (int)totalSeconds / 60;
+            totalSeconds %= 60;
+            return $"{minutes}:{totalSeconds:00.0}";
         }
     }
 }

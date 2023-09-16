@@ -8,6 +8,6 @@ namespace IngameScript.Navigation
 {
     public interface IVariableMaxOverrideThrustController
     {
-        float MaxThrustOverrideRatio { get; set; }
+        float MaxThrustRatio { get; set; }
     }
 }

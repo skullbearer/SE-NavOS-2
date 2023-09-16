@@ -15,7 +15,7 @@ namespace IngameScript.Navigation
         const float DAMPENER_TOLERANCE = 0.005f;
 
         public override string Name => nameof(Retroburn);
-        public float MaxThrustOverrideRatio
+        public float MaxThrustRatio
         {
             get { return _maxThrustOverrideRatio; }
             set
@@ -46,7 +46,7 @@ namespace IngameScript.Navigation
             this.thrusters = thrusters.ToDictionary(
                 kv => kv.Key,
                 kv => thrusters[kv.Key]
-                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustOverrideRatio))
+                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustRatio))
                     .ToArray());
         }
 
@@ -63,13 +63,9 @@ namespace IngameScript.Navigation
             double velocitySq = shipVelocity.LengthSquared();
 
             if (velocitySq > terminateSpeed * terminateSpeed)
-            {
                 Orient(-shipVelocity);
-            }
             else
-            {
                 ResetGyroOverride();
-            }
 
             if (counter % runInterval == 0)
             {
@@ -77,19 +73,14 @@ namespace IngameScript.Navigation
                 Vector3D shipVelocityNormalized = shipVelocity.SafeNormalize();
 
                 if (Vector3D.Dot(-shipVelocityNormalized, ShipController.WorldMatrix.Forward) > 0.999999)
-                {
                     DampenAllDirections(shipVelocity);
-                }
                 else
-                {
                     ResetThrustOverrides();
-                }
             }
 
             if (velocitySq <= DAMPENER_TOLERANCE * DAMPENER_TOLERANCE)
             {
                 ResetThrustOverrides();
-                ResetGyroOverride();
                 ShipController.DampenersOverride = true;
                 Terminate(this, $"Speed is less than {DAMPENER_TOLERANCE} m/s");
             }
@@ -102,7 +93,7 @@ namespace IngameScript.Navigation
                 for (int i = 0; i < kv.Value.Length; i++)
                 {
                     var val = kv.Value[i];
-                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustOverrideRatio;
+                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustRatio;
                     kv.Value[i] = val;
                 }
             }
@@ -136,12 +127,8 @@ namespace IngameScript.Navigation
         private void ResetThrustOverrides()
         {
             foreach (var list in thrusters.Values)
-            {
                 foreach (var thruster in list)
-                {
                     thruster.Item1.ThrustOverridePercentage = 0;
-                }
-            }
         }
     }
 }

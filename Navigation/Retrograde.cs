@@ -34,8 +34,6 @@ namespace IngameScript.Navigation
 
             if (shipVelocity.LengthSquared() <= terminateSpeed * terminateSpeed)
             {
-                ResetGyroOverride();
-
                 Terminate(this, $"Speed is less than {terminateSpeed:0.#} m/s");
             }
         }

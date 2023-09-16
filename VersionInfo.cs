@@ -37,12 +37,9 @@ namespace IngameScript
                 {
                     switch (i)
                     {
-                        case 0:
-                            ver.Major = uint.Parse(str[i]); break;
-                        case 1:
-                            ver.Minor = uint.Parse(str[i]); break;
-                        case 2:
-                            ver.Patch = uint.Parse(str[i]); break;
+                        case 0: ver.Major = uint.Parse(str[i]); break;
+                        case 1: ver.Minor = uint.Parse(str[i]); break;
+                        case 2: ver.Patch = uint.Parse(str[i]); break;
                     }
                 }
             }
@@ -58,15 +55,8 @@ namespace IngameScript
             return true;
         }
 
-        public override string ToString()
-        {
-            return $"{Major}.{Minor}.{Patch}";
-        }
-
-        public string ToString(bool hidePatchNumberIfZero)
-        {
-            return hidePatchNumberIfZero && Patch == 0 ? $"{Major}.{Minor}" : this.ToString();
-        }
+        public override string ToString() => $"{Major}.{Minor}.{Patch}";
+        public string ToString(bool hidePatchNumberIfZero) => hidePatchNumberIfZero && Patch == 0 ? $"{Major}.{Minor}" : this.ToString();
 
         public static bool operator <(VersionInfo x, VersionInfo y)
         {
@@ -90,40 +80,20 @@ namespace IngameScript
             return x.Patch > y.Patch;
         }
 
-        public static bool operator <=(VersionInfo x, VersionInfo y)
-        {
-            return x < y || x == y;
-        }
-
-        public static bool operator >=(VersionInfo x, VersionInfo y)
-        {
-            return x > y || x == y;
-        }
-
-        public static bool operator ==(VersionInfo x, VersionInfo y)
-        {
-            return x.Major == y.Major && x.Minor == y.Minor && x.Patch == y.Patch;
-        }
-
-        public static bool operator !=(VersionInfo x, VersionInfo y)
-        {
-            return !(x == y);
-        }
+        public static bool operator <=(VersionInfo x, VersionInfo y) => x < y || x == y;
+        public static bool operator >=(VersionInfo x, VersionInfo y) => x > y || x == y;
+        public static bool operator ==(VersionInfo x, VersionInfo y) => x.Equals(y);
+        public static bool operator !=(VersionInfo x, VersionInfo y) => !x.Equals(y);
 
         public override bool Equals(object obj)
         {
             if (obj == null || !(obj is VersionInfo))
                 return false;
 
-            return this == (VersionInfo)obj;
+            VersionInfo ver2 = (VersionInfo)obj;
+            return Major == ver2.Major && Minor == ver2.Minor && Patch == ver2.Patch;
         }
 
-        public override int GetHashCode()
-        {
-            return HashCodeHelpers.CombineHashCodes(
-                Major.GetHashCode(),
-                Minor.GetHashCode(),
-                Patch.GetHashCode());
-        }
+        public override int GetHashCode() => HashCodeHelpers.CombineHashCodes(Major.GetHashCode(), Minor.GetHashCode(), Patch.GetHashCode());
     }
 }

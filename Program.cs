@@ -80,7 +80,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.13-dev3";
+        public const string versionStr = "2.13-dev3.1";
         public static VersionInfo versionInfo = new VersionInfo(2, 13, 0);
 
         private Config config;
@@ -108,23 +108,19 @@ namespace IngameScript
         private void TryRestoreNavState()
         {
             if (String.IsNullOrWhiteSpace(config.PersistStateData))
-            {
                 return;
-            }
 
             string[] args = config.PersistStateData.Split('|');
             NavModeEnum mode;
             
             if (args.Length == 0 || !Enum.TryParse<NavModeEnum>(args[0], out mode) || mode == NavModeEnum.None)
-            {
                 return;
-            }
 
             AbortNav(false);
 
             try
             {
-                bool restoreFailed = false;
+                string stateStr = null;
                 if (mode == NavModeEnum.Cruise && args.Length >= 2)
                 {
                     double desiredSpeed;
@@ -132,12 +128,10 @@ namespace IngameScript
                     if (double.TryParse(args[1], out desiredSpeed) && Vector3D.TryParse(Storage, out target))
                     {
                         InitRetroCruise(target, desiredSpeed);
-                        optionalInfo = $"Restored State: {mode} {desiredSpeed}";
+                        stateStr = mode + " " + desiredSpeed;
                     }
                     else
-                    {
-                        restoreFailed = true;
-                    }
+                        stateStr = null;
                 }
                 if (mode == NavModeEnum.SpeedMatch && args.Length >= 2)
                 {
@@ -145,27 +139,25 @@ namespace IngameScript
                     if (long.TryParse(args[1], out targetId))
                     {
                         InitSpeedMatch(targetId);
-                        optionalInfo = $"Restored State: {mode} {targetId}";
+                        stateStr = mode + " " + targetId;
                     }
                     else
-                    {
-                        restoreFailed = true;
-                    }
+                        stateStr = null;
                 }
                 else if (mode == NavModeEnum.Retrograde)
                 {
                     CommandRetrograde();
-                    optionalInfo = $"Restored State: {mode}";
+                    stateStr = mode.ToString();
                 }
                 else if (mode == NavModeEnum.Retroburn)
                 {
                     CommandRetroburn();
-                    optionalInfo = $"Restored State: {mode}";
+                    stateStr = mode.ToString();
                 }
                 else if (mode == NavModeEnum.Prograde)
                 {
                     CommandPrograde();
-                    optionalInfo = $"Restored State: {mode}";
+                    stateStr = mode.ToString();
                 }
                 else if (mode == NavModeEnum.Orient)
                 {
@@ -173,18 +165,16 @@ namespace IngameScript
                     if (Vector3D.TryParse(Storage, out target))
                     {
                         InitOrient(target);
-                        optionalInfo = $"Restored State: {mode}";
+                        stateStr = mode.ToString();
                     }
                     else
-                    {
-                        restoreFailed = true;
-                    }
+                        stateStr = null;
                 }
 
-                if (restoreFailed)
-                {
+                if (stateStr == null)
                     optionalInfo = $"Failed to restore {mode}";
-                }
+                else
+                    optionalInfo = $"Restored State: {stateStr}";
             }
             catch (Exception e)
             {
@@ -194,31 +184,7 @@ namespace IngameScript
             }
         }
 
-        public void Save()
-        {
-
-        }
-
-        private static string FormatVector3D(Vector3D vec, string numberFormat = null, char separator = ' ')
-        {
-            if (numberFormat != null)
-            {
-                return $"X:{vec.X.ToString(numberFormat)}{separator}" +
-                       $"Y:{vec.Y.ToString(numberFormat)}{separator}" +
-                       $"Z:{vec.Z.ToString(numberFormat)}{separator}";
-            }
-            else
-            {
-                return $"X:{vec.X.ToString()}{separator}" +
-                       $"Y:{vec.Y.ToString()}{separator}" +
-                       $"Z:{vec.Z.ToString()}{separator}";
-            }
-        }
-
-        private void SaveCustomDataConfig()
-        {
-            Me.CustomData = config.ToString();
-        }
+        private void SaveCustomDataConfig() => Me.CustomData = config.ToString();
 
         private void LoadCustomDataConfig()
         {
@@ -238,10 +204,7 @@ namespace IngameScript
                 HandleArgs(argument);
             }
 
-            if (debugLcd != null)
-            {
-                debugLcd.WriteText(debug.ToString());
-            }
+            debugLcd?.WriteText(debug.ToString());
 
             if (!IsNavIdle && cruiseController != null)
             {
@@ -284,12 +247,8 @@ namespace IngameScript
         private void DisableThrustOverrides()
         {
             foreach (var list in thrusters.Values)
-            {
                 foreach (var thruster in list)
-                {
                     thruster.ThrustOverridePercentage = 0;
-                }
-            }
         }
 
         private void DisableGyroOverrides()
@@ -320,10 +279,10 @@ namespace IngameScript
 
 
             var tempThrusters = new List<IMyThrust>();
-            var thrustBlockGroup = GridTerminalSystem.GetBlockGroupWithName(config.ThrustGroupName);
-            thrustBlockGroup?.GetBlocksOfType<IMyThrust>(tempThrusters, i => i.IsSameConstructAs(Me));
+            GridTerminalSystem.GetBlockGroupWithName(config.ThrustGroupName)?.GetBlocksOfType(tempThrusters, i => i.IsSameConstructAs(Me));
+
             if (tempThrusters.Count == 0)
-                GridTerminalSystem.GetBlocksOfType<IMyThrust>(tempThrusters, i => i.IsSameConstructAs(Me));
+                GridTerminalSystem.GetBlocksOfType(tempThrusters, i => i.IsSameConstructAs(Me));
 
             if (tempThrusters.Count == 0)
                 throw new Exception("bruh, this ship's got no thrusters!!");
@@ -332,25 +291,19 @@ namespace IngameScript
             {
                 switch (GetBlockDirection(thruster.WorldMatrix.Forward, controller.WorldMatrix))
                 {
-                    case Direction.Backward:
-                        thrusters[Direction.Forward].Add(thruster); break;
-                    case Direction.Forward:
-                        thrusters[Direction.Backward].Add(thruster); break;
-                    case Direction.Left:
-                        thrusters[Direction.Right].Add(thruster); break;
-                    case Direction.Right:
-                        thrusters[Direction.Left].Add(thruster); break;
-                    case Direction.Down:
-                        thrusters[Direction.Up].Add(thruster); break;
-                    case Direction.Up:
-                        thrusters[Direction.Down].Add(thruster); break;
+                    case Direction.Backward: thrusters[Direction.Forward].Add(thruster); break;
+                    case Direction.Forward: thrusters[Direction.Backward].Add(thruster); break;
+                    case Direction.Left: thrusters[Direction.Right].Add(thruster); break;
+                    case Direction.Right: thrusters[Direction.Left].Add(thruster); break;
+                    case Direction.Down: thrusters[Direction.Up].Add(thruster); break;
+                    case Direction.Up: thrusters[Direction.Down].Add(thruster); break;
                 }
             }
 
-            var gyroBlockGroup = GridTerminalSystem.GetBlockGroupWithName(config.GyroGroupName);
-            gyroBlockGroup?.GetBlocksOfType<IMyGyro>(gyros, i => i.IsSameConstructAs(Me) && i.IsFunctional);
+            GridTerminalSystem.GetBlockGroupWithName(config.GyroGroupName)?.GetBlocksOfType(gyros, i => i.IsSameConstructAs(Me) && i.IsFunctional);
+
             if (gyros.Count == 0)
-                GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros, i => i.IsSameConstructAs(Me) && i.IsFunctional);
+                GridTerminalSystem.GetBlocksOfType(gyros, i => i.IsSameConstructAs(Me) && i.IsFunctional);
 
             if (gyros.Count == 0)
                 throw new Exception("No gyros");
@@ -365,12 +318,7 @@ namespace IngameScript
         {
             IMyTerminalBlock block = GridTerminalSystem.GetBlockWithName(name);
 
-            if (block == null || !(block is T))
-            {
-                return default(T);
-            }
-
-            return (T)block;
+            return block is T ? (T)block : default(T);
         }
 
         public static Direction GetBlockDirection(Vector3D vector, MatrixD refMatrix)
@@ -424,44 +372,42 @@ ThrustRatio <ratio0to1>
                 pbOut.AppendLine(optionalInfo);
             }
 
-            pbOut.Append("\n-- Loaded Config --\n");
-            pbOut.Append(nameof(config.MaxThrustOverrideRatio)).Append('=').AppendLine(config.MaxThrustOverrideRatio.ToString());
-            pbOut.Append(nameof(config.IgnoreMaxThrustForSpeedMatch)).Append('=').AppendLine(config.IgnoreMaxThrustForSpeedMatch.ToString());
-            pbOut.Append(nameof(config.ShipControllerTag)).Append('=').AppendLine(config.ShipControllerTag);
-            pbOut.Append(nameof(config.ThrustGroupName)).Append('=').AppendLine(config.ThrustGroupName);
-            pbOut.Append(nameof(config.GyroGroupName)).Append('=').AppendLine(config.GyroGroupName);
-            pbOut.Append(nameof(config.ConsoleLcdName)).Append('=').AppendLine(config.ConsoleLcdName);
-            pbOut.Append(nameof(config.CruiseOffsetDist)).Append('=').AppendLine(config.CruiseOffsetDist.ToString());
-            pbOut.Append(nameof(config.CruiseOffsetSideDist)).Append('=').AppendLine(config.CruiseOffsetSideDist.ToString());
-            pbOut.Append(nameof(config.Ship180TurnTimeSeconds)).Append('=').AppendLine(config.Ship180TurnTimeSeconds.ToString());
+            pbOut.Append("\n-- Loaded Config --\n")
+            .Append(nameof(config.MaxThrustOverrideRatio)).Append('=').AppendLine(config.MaxThrustOverrideRatio.ToString())
+            .Append(nameof(config.IgnoreMaxThrustForSpeedMatch)).Append('=').AppendLine(config.IgnoreMaxThrustForSpeedMatch.ToString())
+            .Append(nameof(config.ShipControllerTag)).Append('=').AppendLine(config.ShipControllerTag)
+            .Append(nameof(config.ThrustGroupName)).Append('=').AppendLine(config.ThrustGroupName)
+            .Append(nameof(config.GyroGroupName)).Append('=').AppendLine(config.GyroGroupName)
+            .Append(nameof(config.ConsoleLcdName)).Append('=').AppendLine(config.ConsoleLcdName)
+            .Append(nameof(config.CruiseOffsetDist)).Append('=').AppendLine(config.CruiseOffsetDist.ToString())
+            .Append(nameof(config.CruiseOffsetSideDist)).Append('=').AppendLine(config.CruiseOffsetSideDist.ToString())
+            .Append(nameof(config.Ship180TurnTimeSeconds)).Append('=').AppendLine(config.Ship180TurnTimeSeconds.ToString())
 
-            pbOut.Append("\n-- Nav Info --");
-            pbOut.Append("\nNavMode: ").Append(NavMode.ToString());
-            pbOut.Append("\nDebug: ").Append(debugLcd != null);
-            pbOut.AppendLine();
+            .Append("\n-- Nav Info --")
+            .Append("\nNavMode: ").Append(NavMode.ToString())
+            .Append("\nDebug: ").Append(debugLcd != null)
+            .AppendLine();
 
             AppendNavInfo(pbOut);
 
             consoleLcd?.WriteText(pbOut);
 
-            pbOut.Append(commandStr);
+            pbOut.Append(commandStr)
 
-            pbOut.Append("\n-- Detected Blocks --\n");
-            pbOut.Append("ConsoleLcd: ").Append(consoleLcd != null).AppendLine();
-            pbOut.Append("DebugLcd: ").Append(debugLcd != null).AppendLine();
-            pbOut.Append(thrusters[Direction.Forward].Count).Append(" Forward Thrusters\n");
-            pbOut.Append(thrusters[Direction.Backward].Count).Append(" Backward Thrusters\n");
-            pbOut.Append(thrusters[Direction.Right].Count).Append(" Right Thrusters\n");
-            pbOut.Append(thrusters[Direction.Left].Count).Append(" Left Thrusters\n");
-            pbOut.Append(thrusters[Direction.Up].Count).Append(" Up Thrusters\n");
-            pbOut.Append(thrusters[Direction.Down].Count).Append(" Down Thrusters\n");
-            pbOut.Append(gyros.Count).Append(" Gyros\n");
-
-            pbOut.Append("\n-- Runtime Information --");
-            pbOut.Append("\nLast Runtime: ").Append(Runtime.LastRunTimeMs);
-            pbOut.Append("\nAverage Runtime: ").Append(avgRtStr);
-            pbOut.Append("\nMax Runtime: ").Append(profiler.MaxRuntimeMsFast);
-            //pbOut.Append("\n\nNavOS by StarCpt");
+            .Append("\n-- Detected Blocks --")
+            .Append("\nConsoleLcd: ").Append(consoleLcd != null)
+            .Append("\nDebugLcd: ").Append(debugLcd != null).AppendLine()
+            .Append(thrusters[Direction.Forward].Count).Append(" Forward Thrusters\n")
+            .Append(thrusters[Direction.Backward].Count).Append(" Backward Thrusters\n")
+            .Append(thrusters[Direction.Right].Count).Append(" Right Thrusters\n")
+            .Append(thrusters[Direction.Left].Count).Append(" Left Thrusters\n")
+            .Append(thrusters[Direction.Up].Count).Append(" Up Thrusters\n")
+            .Append(thrusters[Direction.Down].Count).Append(" Down Thrusters\n")
+            .Append(gyros.Count).Append(" Gyros")
+            .Append("\n\n-- Runtime Information --")
+            .Append("\nLast Runtime: ").Append(Runtime.LastRunTimeMs)
+            .Append("\nAverage Runtime: ").Append(avgRtStr)
+            .Append("\nMax Runtime: ").Append(profiler.MaxRuntimeMsFast);
 
             Echo(pbOut.ToString());
 
@@ -496,9 +442,6 @@ ThrustRatio <ratio0to1>
             else return $"{minutes.ToString("00")}:{seconds.ToString("00")}";
         }
 
-        public static void Log(string message)
-        {
-            debug?.AppendLine(message);
-        }
+        public static void Log(string message) => debug?.AppendLine(message);
     }
 }

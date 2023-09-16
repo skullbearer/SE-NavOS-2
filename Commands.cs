@@ -17,13 +17,15 @@ namespace IngameScript
                 return;
             }
 
-            if (argument.ToLower().Contains("abort"))
+            argument = argument.ToLower();
+
+            if (argument.Contains("abort"))
             {
                 AbortNav(false);
                 return;
             }
 
-            string[] args = argument.ToLower().Split(' ');
+            string[] args = argument.Split(' ');
 
             if (args.Length < 1)
             {
@@ -33,103 +35,89 @@ namespace IngameScript
             if (args[0].Equals("reload"))
             {
                 AbortNav(false);
-                CommandReloadConfig();
+                LoadCustomDataConfig();
+                return;
             }
             else if (args[0].Equals("maxthrustoverrideratio") || args[0].Equals("thrustratio"))
             {
-                if (args.Length < 2)
-                {
-                    optionalInfo = "New override ratio argument not found!";
-                    return;
-                }
-
-                double result;
-                if (!double.TryParse(args[1], out result))
-                {
-                    optionalInfo = "Could not parse new override ratio";
-                    return;
-                }
-
-                config.MaxThrustOverrideRatio = result;
-                SaveCustomDataConfig();
-
-                if (cruiseController is IVariableMaxOverrideThrustController)
-                {
-                    if (cruiseController is SpeedMatch)
-                    {
-                        ((SpeedMatch)cruiseController).MaxThrustOverrideRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)result;
-                    }
-                    else
-                    {
-                        ((IVariableMaxOverrideThrustController)cruiseController).MaxThrustOverrideRatio = (float)result;
-                    }
-                }
-
-                optionalInfo = $"New thrust ratio set {result:0.##}";
+                SetThrustRatio(args);
+                return;
             }
 
-            bool cmdMatched = false;
+            Action cmdAction = null;
 
             if (args.Length >= 3 && args[0].Equals("cruise"))
             {
-                AbortNav(false);
-                CommandCruise(args, argument);
-                cmdMatched = true;
+                cmdAction = () => CommandCruise(args, argument);
             }
-            else if (args[0].Equals("retro") || args[0].Equals("retrograde"))
+            else if (args[0] == "retro" || args[0] == "retrograde")
             {
-                AbortNav(false);
-                CommandRetrograde();
-                cmdMatched = true;
+                cmdAction = CommandRetrograde;
             }
-            else if (args[0].Equals("retroburn"))
+            else if (args[0] == "retroburn")
             {
-                AbortNav(false);
-                CommandRetroburn();
-                cmdMatched = true;
+                cmdAction = CommandRetroburn;
             }
-            else if (args[0].Equals("prograde"))
+            else if (args[0] == "prograde")
             {
-                AbortNav(false);
-                CommandPrograde();
-                cmdMatched = true;
+                cmdAction = CommandPrograde;
             }
-            else if (args[0].Equals("match") || args[0].Equals("speedmatch"))
+            else if (args[0] == "match" || args[0] == "speedmatch")
             {
-                AbortNav(false);
-                CommandSpeedMatch();
-                cmdMatched = true;
+                cmdAction = CommandSpeedMatch;
             }
-            else if (args[0].Equals("orient"))
+            else if (args[0] == "orient")
             {
-                AbortNav(false);
-                CommandOrient(argument);
-                cmdMatched = true;
+                cmdAction = () => CommandOrient(argument);
             }
-            else if (args[0].Equals("calibrate180"))
+            else if (args[0] == "calibrate180")
             {
                 //TODO: Calibrate 180 Time
             }
 
-            if (cmdMatched)
+            if (cmdAction != null)
             {
-                //optionalInfo = "";
+                AbortNav(false);
+                optionalInfo = "";
+                cmdAction.Invoke();
             }
         }
 
-        private void CommandReloadConfig()
+        private void SetThrustRatio(string[] args)
         {
-            LoadCustomDataConfig();
+            if (args.Length < 2)
+            {
+                optionalInfo = "New override ratio argument not found!";
+                return;
+            }
+
+            double result;
+            if (!double.TryParse(args[1], out result))
+            {
+                optionalInfo = "Could not parse new override ratio";
+                return;
+            }
+
+            config.MaxThrustOverrideRatio = result;
+            SaveCustomDataConfig();
+
+            if (cruiseController is IVariableMaxOverrideThrustController)
+            {
+                if (cruiseController is SpeedMatch)
+                    ((SpeedMatch)cruiseController).MaxThrustRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)result;
+                else
+                    ((IVariableMaxOverrideThrustController)cruiseController).MaxThrustRatio = (float)result;
+            }
+
+            optionalInfo = $"New thrust ratio set to {result:0.##}";
         }
 
         private void CommandCruise(string[] args, string argument)
         {
             try
             {
-                double desiredSpeed;
+                double desiredSpeed = double.Parse(args[1]);
                 Vector3D target;
-
-                desiredSpeed = double.Parse(args[1]);
 
                 double result;
                 bool distanceCruise;
@@ -189,6 +177,7 @@ namespace IngameScript
                 }
 
                 InitRetroCruise(target + offsetTarget, desiredSpeed);
+                optionalInfo = "";
             }
             catch (Exception e)
             {
@@ -201,7 +190,7 @@ namespace IngameScript
             NavMode = NavModeEnum.Cruise;
             cruiseController = new RetroCruiseControl(target, speed, aimController, controller, gyros, thrusters)
             {
-                MaxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
+                MaxThrustRatio = (float)config.MaxThrustOverrideRatio,
                 decelStartMarginSeconds = config.Ship180TurnTimeSeconds * 1.5,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
@@ -225,7 +214,7 @@ namespace IngameScript
             NavMode = NavModeEnum.Retroburn;
             cruiseController = new Retroburn(aimController, controller, gyros, thrusters)
             {
-                MaxThrustOverrideRatio = (float)config.MaxThrustOverrideRatio,
+                MaxThrustRatio = (float)config.MaxThrustOverrideRatio,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retroburn}";
@@ -282,6 +271,7 @@ namespace IngameScript
                 }
 
                 InitOrient(target);
+                optionalInfo = "";
             }
             catch (Exception e)
             {
@@ -297,7 +287,6 @@ namespace IngameScript
             config.PersistStateData = $"{NavModeEnum.Orient}";
             Storage = target.ToString();
             SaveCustomDataConfig();
-            optionalInfo = "";
         }
 
         private void InitSpeedMatch(long targetId)
@@ -305,7 +294,7 @@ namespace IngameScript
             NavMode = NavModeEnum.SpeedMatch;
             cruiseController = new SpeedMatch(targetId, wcApi, controller, thrusters, Me)
             {
-                MaxThrustOverrideRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)config.MaxThrustOverrideRatio,
+                MaxThrustRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)config.MaxThrustOverrideRatio,
             };
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.SpeedMatch}|{targetId}";

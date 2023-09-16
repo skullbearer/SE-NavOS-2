@@ -24,8 +24,8 @@ namespace IngameScript.Navigation
         }
 
         const double TICK = 1.0 / 60.0;
-        const double DegToRadMulti = Math.PI / 180;
-        const double RadToDegMulti = 180 / Math.PI;
+        const double DegToRadMulti = Math.PI / 180.0;
+        const double RadToDegMulti = 180.0 / Math.PI;
 
         public event CruiseTerminateEventDelegate CruiseTerminated = delegate { };
 
@@ -46,7 +46,7 @@ namespace IngameScript.Navigation
         }
         public Vector3D Target { get; }
         public double DesiredSpeed { get; }
-        public float MaxThrustOverrideRatio
+        public float MaxThrustRatio
         {
             get { return _maxThrustOverrideRatio; }
             set
@@ -125,7 +125,7 @@ namespace IngameScript.Navigation
         private double accelTime;
         private double timeToStartDecel;
         private double cruiseTime;
-        private double stopTime;
+        //private double stopTime;
         private double stopDist;
         private double actualStopTime;
         private double distanceToTarget;
@@ -133,6 +133,7 @@ namespace IngameScript.Navigation
         private double mySpeed;
         private Vector3D targetDirection;
         private double currentAndDesiredSpeedDelta;
+        private Vector3D gravityAtPos;
 
         private string cruiseStageStr;
         private StringBuilder statusStrb = new StringBuilder();
@@ -151,7 +152,7 @@ namespace IngameScript.Navigation
             this.thrusters = thrusters.ToDictionary(
                 kv => kv.Key,
                 kv => thrusters[kv.Key]
-                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustOverrideRatio))
+                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustRatio))
                     .ToArray());
 
             Stage = RetroCruiseStage.None;
@@ -183,25 +184,34 @@ namespace IngameScript.Navigation
             {
                 case RetroCruiseStage.CancelPerpendicularVelocity:
                 case RetroCruiseStage.OrientAndAccelerate:
-                    statusStrb.AppendLine($"{((byte)Stage == 1 ? $"{stage1}" : $">{stage1}>")}> Accelerate {accelTime:0.0}\nCruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
+                    statusStrb.Append((byte)Stage == 1 ? stage1 : $">{stage1}>")
+                        .Append(" Accelerate ").AppendTime(accelTime)
+                        .Append("\nCruise ").AppendTime(cruiseTime)
+                        .Append("\nDecelerate ").AppendTime(actualStopTime)
+                        .Append("\nStop");
                     break;
                 case RetroCruiseStage.OrientAndDecelerate:
-                    statusStrb.AppendLine($">{stage1}>> Accelerate {accelTime:0.0}");
+                    statusStrb.Append($">{stage1}>> Accelerate 0:00\n");
                     if (!decelerating)
-                        statusStrb.AppendLine($"> Cruise {cruiseTime:0.0}\nDecelerate {actualStopTime:0.0}\nStop");
+                        statusStrb.Append("> Cruise ").AppendTime(cruiseTime).AppendLine();
                     else
-                        statusStrb.AppendLine($">> Cruise {cruiseTime:0.0}\n> Decelerate {actualStopTime:0.0}\nStop");
+                        statusStrb.Append(">> Cruise 0:00\n> ");
+                    statusStrb.Append("Decelerate ").AppendTime(actualStopTime).Append("\nStop");
                     break;
                 case RetroCruiseStage.DecelerateNoOrient:
-                    statusStrb.AppendLine($">{stage1}>> Accelerate {accelTime:0.0}\n>> Cruise {cruiseTime:0.0}\n>> Decelerate {actualStopTime:0.0}\n> Stop");
+                    statusStrb.Append($">{stage1}>> Accelerate 0:00\n>> Cruise 0:00\n>> Decelerate 0:00\n> Stop").AppendTime(actualStopTime);
                     break;
             }
 
-            statusStrb.Append("\nETA: ").Append(estimatedTimeOfArrival.ToString("0.0"));
-            statusStrb.Append("\nDesired Speed: ").Append(DesiredSpeed.ToString("0.##"));
-            statusStrb.Append("\nTargetDistance: ").Append(distanceToTarget.ToString("0.0"));
-            statusStrb.Append("\nTimeToStartDecel: ").Append(timeToStartDecel.ToString("0.000"));
+            statusStrb.Append("\n\nETA: ").AppendTime(estimatedTimeOfArrival);
+            statusStrb.Append("\nTimeToStartDecel: ");
+            if (timeToStartDecel > 60)
+                statusStrb.AppendTime(timeToStartDecel);
+            else
+                statusStrb.Append(timeToStartDecel.ToString("0.000"));
             statusStrb.Append("\nStoppingDistance: ").Append(stopDist.ToString("0.0"));
+            statusStrb.Append("\nTargetDistance: ").Append(distanceToTarget.ToString("0.0"));
+            statusStrb.Append("\nDesired Speed: ").Append(DesiredSpeed.ToString("0.##"));
             statusStrb.Append("\nAim Error: ").Append(((lastAimDirectionAngleRad ?? 0) * RadToDegMulti).ToString("0.000"));
             statusStrb.AppendLine();
         }
@@ -238,7 +248,7 @@ namespace IngameScript.Navigation
                 for (int i = 0; i < kv.Value.Length; i++)
                 {
                     var val = kv.Value[i];
-                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustOverrideRatio;
+                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustRatio;
                     kv.Value[i] = val;
                 }
             }
@@ -290,6 +300,7 @@ namespace IngameScript.Navigation
             if (counter30)
             {
                 UpdateForwardThrustAndAccel();
+                gravityAtPos = ShipController.GetNaturalGravity();
             }
             if (counter60)
             {
@@ -298,7 +309,7 @@ namespace IngameScript.Navigation
             }
 
             Vector3D myPosition = ShipController.GetPosition();
-            myVelocity = ShipController.GetShipVelocities().LinearVelocity;
+            myVelocity = ShipController.GetShipVelocities().LinearVelocity + gravityAtPos;
             mySpeed = myVelocity.Length();
 
             targetDirection = Target - myPosition;//aka relativePosition
@@ -307,9 +318,9 @@ namespace IngameScript.Navigation
             //time to stop: currentSpeed / acceleration;
             //stopping distance: timeToStop * (currentSpeed / 2)
             //or also: currentSpeed^2 / (2 * acceleration)
-            stopTime = mySpeed / forwardAccelPremultiplied * stopTimeAndDistanceMulti;
+            //stopTime = mySpeed / forwardAccelPremultiplied * stopTimeAndDistanceMulti;
             //stopDist = stopTime * (mySpeed * 0.5);
-            stopDist = (mySpeed * mySpeed) / (2 * forwardAccel);
+            stopDist = (mySpeed * mySpeed) / (2 * forwardAccelPremultiplied) * stopTimeAndDistanceMulti;
 
             timeToStartDecel = ((distanceToTarget - stopDist) / mySpeed) + (TICK * 2);
             //double distToStartDecel = distanceToTarget - stopDist;
@@ -381,16 +392,33 @@ namespace IngameScript.Navigation
                     cruiseTime = cruiseDist / DesiredSpeed;
 
                     estimatedTimeOfArrival = accelTime + cruiseTime + actualStopTime;
+
+                    if (cruiseTime < 0)
+                    {
+                        double cruiseAndTurnTimeDiv2 = (cruiseTime - decelStartMarginSeconds) * 0.5;
+                        accelTime += cruiseAndTurnTimeDiv2;
+                        actualStopTime += cruiseAndTurnTimeDiv2;
+                        cruiseTime = decelStartMarginSeconds;
+                    }
+
+                    //if (cruiseDist < 0)
+                    //{
+                    //    double cruiseDistDiv2 = cruiseDist * 0.5;
+                    //    accelDist += cruiseDistDiv2;
+                    //    actualStopTime += cruiseDistDiv2;
+                    //
+                    //    accelTime = 
+                    //}
                 }
                 else
                 {
                     accelTime = 0;
-                    actualStopTime = stopTime;
+                    actualStopTime = mySpeed / forwardAccelPremultiplied * stopTimeAndDistanceMulti; ;
 
                     double cruiseDist = distanceToTarget - stopDist;
                     cruiseTime = cruiseDist / mySpeed;
 
-                    estimatedTimeOfArrival = cruiseTime + stopTime;
+                    estimatedTimeOfArrival = cruiseTime + actualStopTime;
                 }
             }
         }
@@ -400,7 +428,7 @@ namespace IngameScript.Navigation
             forwardThrust = thrusters[Direction.Forward].Where(t => t.Item1.IsWorking).Sum(t => t.Item1.MaxEffectiveThrust);
             forwardThrustInv = 1f / forwardThrust;
             forwardAccel = forwardThrust / gridMass;
-            forwardAccelPremultiplied = forwardAccel * MaxThrustOverrideRatio;
+            forwardAccelPremultiplied = forwardAccel * MaxThrustRatio;
         }
 
         private void ResetThrustOverrides()
@@ -490,7 +518,7 @@ namespace IngameScript.Navigation
 
             if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
             {
-                float overrideAmount = MathHelper.Clamp(((float)perpSpeed * 2 * gridMass) / forwardThrust, 0, MaxThrustOverrideRatio);
+                float overrideAmount = MathHelper.Clamp(((float)perpSpeed * 2 * gridMass) / forwardThrust, 0, MaxThrustRatio);
                 foreach (var thruster in thrusters[Direction.Forward])
                 {
                     thruster.Item1.ThrustOverridePercentage = overrideAmount;
@@ -538,7 +566,7 @@ namespace IngameScript.Navigation
             {
                 foreach (var thruster in thrusters[Direction.Forward])
                 {
-                    thruster.Item1.ThrustOverridePercentage = MaxThrustOverrideRatio;
+                    thruster.Item1.ThrustOverridePercentage = MaxThrustRatio;
                 }
 
                 DampenSideways(myVelocity * 0.1);
@@ -583,7 +611,7 @@ namespace IngameScript.Navigation
                     return;
                 }
 
-                float overrideAmount = MathHelper.Clamp(((float)-timeToStartDecel + MaxThrustOverrideRatio), 0f, MaxThrustOverrideRatio);
+                float overrideAmount = MathHelper.Clamp(((float)-timeToStartDecel + MaxThrustRatio), 0f, MaxThrustRatio);
 
                 decelerating = overrideAmount > 0;
 
@@ -626,7 +654,7 @@ namespace IngameScript.Navigation
                 return;
             }
 
-            float overrideAmount = Math.Min(((float)-timeToStartDecel + MaxThrustOverrideRatio), MaxThrustOverrideRatio);
+            float overrideAmount = Math.Min(((float)-timeToStartDecel + MaxThrustRatio), MaxThrustRatio);
 
             foreach (var thruster in thrusters[Direction.Forward])
             {
@@ -659,12 +687,15 @@ namespace IngameScript.Navigation
 
             ResetGyroOverride();
 
-            Stage = RetroCruiseStage.Aborted;
-
             CruiseTerminated.Invoke(this, reason);
         }
 
-        public void Abort() => Terminate("Aborted");
+        public void Abort()
+        {
+            Stage = RetroCruiseStage.Aborted;
+            Terminate("Aborted");
+        }
+
         protected override void OnNoFunctionalGyrosLeft() => Terminate("No functional gyros found");
     }
 }
