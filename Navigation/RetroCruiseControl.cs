@@ -636,17 +636,14 @@ namespace IngameScript.Navigation
             DampenSideways(myVelocity, 0);
         }
 
-        private double AngleRadiansCosBetweenVectorAndControllerForward(Vector3D vec)
-        {
-            return ShipController.WorldMatrix.Forward.Dot(vec) / vec.Length();
-        }
-
         private double AngleRadiansBetweenVectorAndControllerForward(Vector3D vec)
         {
             //don't do unnecessary sqrt for controller.matrix.forward because its already a unit vector
             double cos = ShipController.WorldMatrix.Forward.Dot(vec) / vec.Length();
             double angle = Math.Acos(cos);
-            return angle != double.NaN ? angle : 0;
+            if (double.IsNaN(angle))
+                angle = 0;
+            return angle;
         }
 
         private void Complete()
