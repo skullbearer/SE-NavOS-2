@@ -121,15 +121,16 @@ namespace IngameScript
 
                 double result;
                 bool distanceCruise;
+                int gpsIndex = argument.IndexOf("gps:", StringComparison.OrdinalIgnoreCase);
                 if (distanceCruise = double.TryParse(args[2], out result))
                 {
                     target = controller.GetPosition() + (controller.WorldMatrix.Forward * result);
                 }
-                else if (args[2].StartsWith("gps:", StringComparison.OrdinalIgnoreCase))
+                else if (gpsIndex >= 0)
                 {
                     try
                     {
-                        string[] coords = argument.Substring(argument.IndexOf("GPS:")).Split(':');
+                        string[] coords = argument.Substring(gpsIndex).Split(':');
 
                         double x = double.Parse(coords[2]);
                         double y = double.Parse(coords[3]);
@@ -254,9 +255,10 @@ namespace IngameScript
             {
                 Vector3D target;
 
-                if (argument.Contains("GPS:"))
+                int gpsIndex = argument.IndexOf("gps:", StringComparison.OrdinalIgnoreCase);
+                if (gpsIndex >= 0)
                 {
-                    string[] coords = argument.Substring(argument.IndexOf("GPS:")).Split(':');
+                    string[] coords = argument.Substring(gpsIndex).Split(':');
 
                     double x = double.Parse(coords[2]);
                     double y = double.Parse(coords[3]);
