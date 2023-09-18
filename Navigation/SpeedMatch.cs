@@ -215,7 +215,7 @@ namespace IngameScript.Navigation
         {
             foreach (var kv in thrusters)
                 for (int i = 0; i < kv.Value.Length; i++)
-                    kv.Value[i].Item1.ThrustOverridePercentage = 0;
+                    kv.Value[i].Item1.ThrustOverride = 0;
         }
 
         private void UpdateThrust()

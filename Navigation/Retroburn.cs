@@ -126,9 +126,9 @@ namespace IngameScript.Navigation
 
         private void ResetThrustOverrides()
         {
-            foreach (var list in thrusters.Values)
-                foreach (var thruster in list)
-                    thruster.Item1.ThrustOverridePercentage = 0;
+            foreach (var list in thrusters)
+                foreach (var thruster in list.Value)
+                    thruster.Item1.ThrustOverride = 0;
         }
     }
 }
