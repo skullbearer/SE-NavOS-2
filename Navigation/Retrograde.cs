@@ -22,10 +22,7 @@ namespace IngameScript.Navigation
 
         }
 
-        public virtual void AppendStatus(StringBuilder strb)
-        {
-
-        }
+        public virtual void AppendStatus(StringBuilder strb) { }
 
         public virtual void Run()
         {

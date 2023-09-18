@@ -33,10 +33,7 @@ namespace IngameScript.Navigation
             }
         }
 
-        public void AppendStatus(StringBuilder strb)
-        {
-
-        }
+        public void AppendStatus(StringBuilder strb) { }
 
         public void Terminate(string reason)
         {

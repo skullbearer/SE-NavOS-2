@@ -178,7 +178,6 @@ namespace IngameScript
                 }
 
                 InitRetroCruise(target + offsetTarget, desiredSpeed);
-                optionalInfo = "";
             }
             catch (Exception e)
             {
@@ -207,7 +206,6 @@ namespace IngameScript
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retrograde}";
             SaveCustomDataConfig();
-            optionalInfo = "";
         }
 
         private void CommandRetroburn()
@@ -220,7 +218,6 @@ namespace IngameScript
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retroburn}";
             SaveCustomDataConfig();
-            optionalInfo = "";
         }
 
         private void CommandPrograde()
@@ -230,7 +227,6 @@ namespace IngameScript
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Prograde}";
             SaveCustomDataConfig();
-            optionalInfo = "";
         }
 
         private void CommandSpeedMatch()
@@ -246,7 +242,6 @@ namespace IngameScript
             if ((target?.EntityId ?? 0) == 0)
                 return;
             InitSpeedMatch(target.Value.EntityId);
-            optionalInfo = "";
         }
 
         private void CommandOrient(string argument)

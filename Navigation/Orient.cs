@@ -12,7 +12,7 @@ namespace IngameScript.Navigation
     {
         public event CruiseTerminateEventDelegate CruiseTerminated = delegate { };
 
-        public string Name => nameof(Orient);
+        public string Name => nameof(Navigation.Orient);
         public Vector3D OrientTarget { get; set; }
 
         public Orient(IAimController aimControl, IMyShipController controller, IList<IMyGyro> gyros, Vector3D target)
@@ -21,10 +21,7 @@ namespace IngameScript.Navigation
             this.OrientTarget = target;
         }
 
-        public void AppendStatus(StringBuilder strb)
-        {
-
-        }
+        public void AppendStatus(StringBuilder strb) { }
 
         public virtual void Run()
         {
