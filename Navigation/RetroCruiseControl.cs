@@ -195,7 +195,7 @@ namespace IngameScript.Navigation
                 strb.Append(timeToStartDecel.ToString("0.000"));
 
             if (vmax != 0)
-                strb.Append("\nMax Speed: ").Append(vmax);
+                strb.Append("\nMax Speed: ").Append(vmax.ToString("0.00"));
 
             strb.Append("\nStoppingDistance: ").Append(currentStopDist.ToString("0.0"))
             .Append("\nTargetDistance: ").Append(distanceToTarget.ToString("0.0"))
