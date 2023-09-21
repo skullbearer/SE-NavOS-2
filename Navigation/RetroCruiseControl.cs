@@ -302,7 +302,7 @@ namespace IngameScript.Navigation
             //stopDist = stopTime * (mySpeed * 0.5);
             currentStopDist = (mySpeed * mySpeed) / (2 * forwardAccelPremultiplied) * stopTimeAndDistanceMulti;
 
-            timeToStartDecel = ((distanceToTarget - currentStopDist) / mySpeed) + (TICK/* * 2*/);
+            timeToStartDecel = ((distanceToTarget - currentStopDist) / mySpeed) + TICK;
 
             double currentAndDesiredSpeedDelta = Math.Abs(DesiredSpeed - mySpeed);
 
@@ -521,7 +521,7 @@ namespace IngameScript.Navigation
         {
             bool approaching = Vector3D.Dot(targetDirection, myVelocity) > 0;
 
-            if ((approaching && timeToStartDecel <= decelStartMarginSeconds && mySpeed > 0.01) || (approaching && mySpeed >= DesiredSpeed))
+            if ((approaching && timeToStartDecel <= decelStartMarginSeconds && mySpeed > 0.1) || (approaching && mySpeed >= DesiredSpeed))
             {
                 Stage = RetroCruiseStage.OrientAndDecelerate;
                 return;
