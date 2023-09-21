@@ -85,7 +85,7 @@ namespace IngameScript.Navigation
                 }
             }
         }
-        private double _orientToleranceAngleRadians = 0.05 * DegToRadMulti;
+        private double _orientToleranceAngleRadians = 0.075 * DegToRadMulti;
         private double _orientToleranceAngleRadiansCos;
 
         private float _maxThrustOverrideRatio = 1f;
@@ -154,7 +154,6 @@ namespace IngameScript.Navigation
 
         public void AppendStatus(StringBuilder strb)
         {
-            strb.Clear();
             strb.Append("\n-- Cruise Status --\n\n");
 
             if (timeToStartDecel < 0 || Vector3D.Dot(myVelocity, targetDirection) < 0)
@@ -179,7 +178,7 @@ namespace IngameScript.Navigation
                     if (!decelerating)
                         strb.Append("> Cruise ").AppendTime(cruiseTime).AppendLine();
                     else
-                        strb.Append(">> Cruise 0:00\n> ");
+                        strb.Append(">> Cruise ").Append(timeToStartDecel.ToString("0:00.000")).Append("\n> ");
                     strb.Append("Decelerate ").AppendTime(actualStopTime).Append("\nStop");
                     break;
                 case RetroCruiseStage.DecelerateNoOrient:
@@ -188,11 +187,6 @@ namespace IngameScript.Navigation
             }
 
             strb.Append("\n\nETA: ").AppendTime(estimatedTimeOfArrival);
-
-            if (timeToStartDecel > 60)
-                strb.AppendTime(timeToStartDecel);
-            else
-                strb.Append(timeToStartDecel.ToString("0.000"));
 
             if (vmax != 0)
                 strb.Append("\nMax Speed: ").Append(vmax.ToString("0.00"));
@@ -308,7 +302,7 @@ namespace IngameScript.Navigation
             //stopDist = stopTime * (mySpeed * 0.5);
             currentStopDist = (mySpeed * mySpeed) / (2 * forwardAccelPremultiplied) * stopTimeAndDistanceMulti;
 
-            timeToStartDecel = ((distanceToTarget - currentStopDist) / mySpeed) + (TICK * 2);
+            timeToStartDecel = ((distanceToTarget - currentStopDist) / mySpeed) + (TICK/* * 2*/);
 
             double currentAndDesiredSpeedDelta = Math.Abs(DesiredSpeed - mySpeed);
 

@@ -80,7 +80,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.13-dev5";
+        public const string versionStr = "2.13-dev5.1";
         public static VersionInfo versionInfo = new VersionInfo(2, 13, 0);
 
         private Config config;
@@ -372,6 +372,10 @@ ThrustRatio <ratio0to1>
                 pbOut.AppendLine(optionalInfo);
             }
 
+            pbOut.Append("\nNavMode: ").Append(NavMode.ToString()).AppendLine();
+
+            AppendNavInfo(pbOut);
+
             pbOut.Append("\n-- Loaded Config --\n")
             .Append(nameof(config.MaxThrustOverrideRatio)).Append('=').AppendLine(config.MaxThrustOverrideRatio.ToString())
             .Append(nameof(config.IgnoreMaxThrustForSpeedMatch)).Append('=').AppendLine(config.IgnoreMaxThrustForSpeedMatch.ToString())
@@ -381,16 +385,12 @@ ThrustRatio <ratio0to1>
             .Append(nameof(config.ConsoleLcdName)).Append('=').AppendLine(config.ConsoleLcdName)
             .Append(nameof(config.CruiseOffsetDist)).Append('=').AppendLine(config.CruiseOffsetDist.ToString())
             .Append(nameof(config.CruiseOffsetSideDist)).Append('=').AppendLine(config.CruiseOffsetSideDist.ToString())
-            .Append(nameof(config.Ship180TurnTimeSeconds)).Append('=').AppendLine(config.Ship180TurnTimeSeconds.ToString())
-
-            .Append("\n-- Nav Info --")
-            .Append("\nNavMode: ").Append(NavMode.ToString())
-            .Append("\nDebug: ").Append(debugLcd != null)
-            .AppendLine();
-
-            AppendNavInfo(pbOut);
+            .Append(nameof(config.Ship180TurnTimeSeconds)).Append('=').AppendLine(config.Ship180TurnTimeSeconds.ToString());
 
             consoleLcd?.WriteText(pbOut);
+
+            if (debugLcd != null)
+                pbOut.Append("\nDebug: ").Append(debugLcd != null).AppendLine();
 
             pbOut.Append(commandStr)
 
