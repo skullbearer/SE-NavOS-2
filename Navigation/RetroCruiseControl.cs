@@ -158,7 +158,7 @@ namespace IngameScript.Navigation
 
             if (timeToStartDecel < 0 || Vector3D.Dot(myVelocity, targetDirection) < 0)
             {
-                strb.Append($"!! Overshoot Warning !!\n\n");
+                strb.Append($"!! Overshoot Warning !! ({(currentStopDist - distanceToTarget).ToString("0")})\n\n");
             }
 
             const string stage1 = "> Cancel Perpendicular Speed\n";
