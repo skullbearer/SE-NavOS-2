@@ -1,4 +1,5 @@
 ﻿using IngameScript.Navigation;
+using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,6 +75,25 @@ namespace IngameScript
             {
                 //TODO: Calibrate 180 Time
             }
+            else if (args[0] == "thrust")
+            {
+                float ratio;
+                if (args.Length >= 3 && args[1] == "set" && float.TryParse(args[2], out ratio))
+                {
+                    if (ratio < 0 || ratio > 1.01)
+                    {
+                        optionalInfo = "Ratio must be between 0.0 and 1.0!";
+                    }
+                    else
+                    {
+                        optionalInfo = $"Forward thrust override set to {ratio * 100:0.###}%";
+                        foreach (IMyThrust thrust in thrusters[Direction.Forward])
+                        {
+                            thrust.ThrustOverridePercentage = ratio;
+                        }
+                    }
+                }
+            }
 
             if (cmdAction != null)
             {
@@ -97,6 +117,14 @@ namespace IngameScript
                 optionalInfo = "Could not parse new override ratio";
                 return;
             }
+
+            if (result < 0 || result > 1.01)
+            {
+                optionalInfo = "Ratio must be between 0.0 and 1.0!";
+                return;
+            }
+
+            result = MathHelper.Clamp(result, 0, 1);
 
             config.MaxThrustOverrideRatio = result;
             SaveCustomDataConfig();

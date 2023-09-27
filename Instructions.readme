@@ -62,6 +62,6 @@ Sets the MaxThrustOverrideRatio config value. Input a value between 0 and 1. Thi
 Using either ThrustRatio or MaxthrustOverrideRatio commands will do the same thing.
 Example: ThrustRatio 0.6
 
-TODO:
-Collision Avoidance
-Multi GPS 'Journey' mode
+# Thrust Set <ratio>
+Sets thrust override ratio on forward thrusters. Example command will set forward thrusters on 50% override.
+Example: Thrust Set 0.5
