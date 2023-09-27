@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IngameScript.Navigation
+namespace IngameScript
 {
     internal class Prograde : OrientControllerBase, ICruiseController
     {

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using VRage.ModAPI;
 using VRageMath;
 
-namespace IngameScript.Navigation
+namespace IngameScript
 {
     public abstract class OrientControllerBase
     {

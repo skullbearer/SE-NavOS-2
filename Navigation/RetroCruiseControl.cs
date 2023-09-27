@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using VRage;
 using VRageMath;
 
-namespace IngameScript.Navigation
+namespace IngameScript
 {
     public class RetroCruiseControl : OrientControllerBase, ICruiseController, IVariableMaxOverrideThrustController
     {

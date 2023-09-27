@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using VRage;
 using VRageMath;
 
-namespace IngameScript.Navigation
+namespace IngameScript
 {
     internal class SpeedMatch : ICruiseController, IVariableMaxOverrideThrustController
     {
