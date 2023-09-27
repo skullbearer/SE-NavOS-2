@@ -29,6 +29,7 @@ namespace IngameScript
         SpeedMatch = 4,
         Retroburn = 5,
         Orient = 6,
+        CalibrateTurnTime = 7,
     }
 
     public enum Direction : byte
@@ -79,7 +80,7 @@ namespace IngameScript
 
         private readonly DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.13-dev6";
+        public const string versionStr = "2.13-dev7";
         public static VersionInfo versionInfo = new VersionInfo(2, 13, 0);
 
         private Config config;
@@ -359,6 +360,7 @@ Abort
 Reload (the config)
 ThrustRatio <ratio0to1>
 Thrust Set <ratio>
+CalibrateTurn
 ";
             string avgRtStr = profiler.RunningAverageMs.ToString("0.0000");
 

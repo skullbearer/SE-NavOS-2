@@ -70,9 +70,9 @@ namespace IngameScript
             {
                 cmdAction = () => CommandOrient(argument);
             }
-            else if (args[0] == "calibrate180")
+            else if (args[0] == "calibrateturn")
             {
-                //TODO: Calibrate 180 Time
+                cmdAction = CommandCalibrateTurnTime;
             }
             else if (args[0] == "thrust")
             {
@@ -301,6 +301,15 @@ namespace IngameScript
             {
                 optionalInfo = e.ToString();
             }
+        }
+
+        private void CommandCalibrateTurnTime()
+        {
+            NavMode = NavModeEnum.CalibrateTurnTime;
+            cruiseController = new CalibrateTurnTime(config, aimController, controller, gyros);
+            cruiseController.CruiseTerminated += CruiseTerminated;
+            config.PersistStateData = $"{NavModeEnum.CalibrateTurnTime}";
+            SaveCustomDataConfig();
         }
 
         private void InitOrient(Vector3D target)
