@@ -128,6 +128,7 @@ namespace IngameScript.Navigation
         private Vector3D targetDirection;
         private Vector3D gravityAtPos;
         private double vmax;
+        private bool noSpeedOnStart;
 
         public RetroCruiseControl(
             Vector3D target,
@@ -308,6 +309,8 @@ namespace IngameScript.Navigation
 
             if (Stage == RetroCruiseStage.None)
             {
+                noSpeedOnStart = mySpeed <= completionShipSpeed;
+
                 Vector3D perpVel = Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection);
                 if (perpVel.LengthSquared() > maxInitialPerpendicularVelocity * maxInitialPerpendicularVelocity)
                     Stage = RetroCruiseStage.CancelPerpendicularVelocity;
@@ -521,7 +524,7 @@ namespace IngameScript.Navigation
         {
             bool approaching = Vector3D.Dot(targetDirection, myVelocity) > 0;
 
-            if ((approaching && timeToStartDecel <= decelStartMarginSeconds && mySpeed > 0.1) || (approaching && mySpeed >= DesiredSpeed))
+            if (!noSpeedOnStart && ((approaching && timeToStartDecel <= decelStartMarginSeconds && mySpeed > 0.1) || (approaching && mySpeed >= DesiredSpeed)))
             {
                 Stage = RetroCruiseStage.OrientAndDecelerate;
                 return;
@@ -543,6 +546,8 @@ namespace IngameScript.Navigation
 
             if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
             {
+                noSpeedOnStart = false;
+
                 foreach (var thruster in thrusters[Direction.Forward])
                 {
                     thruster.Item1.ThrustOverridePercentage = MaxThrustRatio;
