@@ -43,7 +43,8 @@
     <Compile Include="CoreSystemsPbApi.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Navigation\CalibrateTurnTime.cs" />
-    <Compile Include="Navigation\IVariableMaxOverrideThrustController.cs" />
+    <Compile Include="Navigation\IThrustController.cs" />
+    <Compile Include="Navigation\IVariableThrustController.cs" />
     <Compile Include="Navigation\Orient.cs" />
     <Compile Include="Navigation\OrientControllerBase.cs" />
     <Compile Include="Navigation\Retroburn.cs" />
@@ -53,6 +54,7 @@
     <Compile Include="Navigation\ICruiseController.cs" />
     <Compile Include="IAimController.cs" />
     <Compile Include="JitAim.cs" />
+    <Compile Include="Navigation\VariableThrustController.cs" />
     <Compile Include="Profiler.cs" />
     <Compile Include="MDK\Bootstrapper.cs" />
     <AdditionalFiles Include="MDK\MDK.options.props">

@@ -16,7 +16,7 @@ namespace IngameScript
         public IMyShipController ShipController { get; private set; }
         public IMyGyro GyroInUse { get; private set; }
 
-        private readonly Queue<IMyGyro> availableGyros;
+        private Queue<IMyGyro> availableGyros;
 
         protected OrientControllerBase(IAimController aimControl, IMyShipController controller, IList<IMyGyro> gyros)
         {

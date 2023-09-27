@@ -1,4 +1,5 @@
-﻿using Sandbox.ModAPI.Ingame;
+﻿using IngameScript.Navigation;
+using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    internal class SpeedMatch : ICruiseController, IVariableMaxOverrideThrustController
+    internal class SpeedMatch : ICruiseController
     {
         private enum TargetAcquisitionMode
         {
@@ -24,56 +25,37 @@ namespace IngameScript
 
         public string Name => nameof(SpeedMatch);
         public IMyShipController ShipController { get; set; }
-        public float MaxThrustRatio
-        {
-            get { return _maxThrustOverrideRatio; }
-            set
-            {
-                if (_maxThrustOverrideRatio != value)
-                {
-                    _maxThrustOverrideRatio = value;
-                    UpdateThrust();
-                }
-            }
-        }
 
         public double relativeSpeedThreshold = 0.01;//stop dampening under this relative speed
         public int thrustInterval = 2;
-
-        private float _maxThrustOverrideRatio = 1; //thrust override multiplier
 
         private long targetEntityId;
         private WcPbApi wcApi;
         private IMyTerminalBlock pb;
 
-        private Dictionary<Direction, MyTuple<IMyThrust, float>[]> thrusters;
+        private IVariableThrustController thrustController;
         private int counter = 0;
         private Dictionary<MyDetectedEntityInfo, float> threats = new Dictionary<MyDetectedEntityInfo, float>();
         private List<MyDetectedEntityInfo> obstructions = new List<MyDetectedEntityInfo>();
         private Vector3D relativeVelocity;
+        private float gridMass;
 
         private MyDetectedEntityInfo? target;
         private TargetAcquisitionMode targetInfoMode;
-
-        private bool counter10 = false;
-        private bool counter30 = false;
 
         public SpeedMatch(
             long targetEntityId,
             WcPbApi wcApi,
             IMyShipController shipController,
-            Dictionary<Direction, List<IMyThrust>> thrusters,
-            IMyTerminalBlock programmableBlock)
+            IMyTerminalBlock programmableBlock,
+            IVariableThrustController thrustController)
         {
             this.targetEntityId = targetEntityId;
             this.wcApi = wcApi;
             this.ShipController = shipController;
-            this.thrusters = thrusters.ToDictionary(
-                kv => kv.Key,
-                kv => thrusters[kv.Key]
-                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustRatio))
-                    .ToArray());
             this.pb = programmableBlock;
+            this.thrustController = thrustController;
+            this.gridMass = ShipController.CalculateShipMass().PhysicalMass;
         }
 
         public void AppendStatus(StringBuilder strb)
@@ -84,11 +66,12 @@ namespace IngameScript
             {
                 strb.Append("\nName: ").Append(target.Value.Name);
                 strb.Append("\nRelativeVelocity: ").AppendLine(relativeVelocity.Length().ToString("0.0"));
+                strb.Append("\nMode: ").AppendLine(targetInfoMode.ToString());
                 //maybe add some more info about the target?
             }
         }
 
-        private bool TryGetTarget(out MyDetectedEntityInfo? target)
+        private bool TryGetTarget(out MyDetectedEntityInfo? target, bool counter30)
         {
             target = null;
 
@@ -160,8 +143,8 @@ namespace IngameScript
         public void Run()
         {
             counter++;
-            counter10 = counter % 10 == 0;
-            counter30 = counter % 30 == 0;
+            bool counter10 = counter % 10 == 0;
+            bool counter30 = counter % 30 == 0;
 
             if (counter10)
             {
@@ -169,71 +152,40 @@ namespace IngameScript
 
                 target = null;
 
-                if (!TryGetTarget(out target))
+                if (!TryGetTarget(out target, counter30))
                 {
-                    ResetThrustOverrides();
+                    thrustController.ResetThrustOverrides();
                     return;
                 }
 
-                UpdateThrust();
+                thrustController.UpdateThrusts();
+            }
+
+            if (counter30 && counter % 60 == 0)
+            {
+                gridMass = ShipController.CalculateShipMass().PhysicalMass;
             }
 
             if (target.HasValue && counter % thrustInterval == 0)
             {
                 relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
                 Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
-                Vector3 thrustAmount = -relativeVelocityLocal * 2 * ShipController.CalculateShipMass().PhysicalMass;
+                Vector3 thrustAmount = -relativeVelocityLocal * 2 * gridMass;
                 thrustAmount *= 0.5f / thrustInterval;
+
                 Vector3 input = ShipController.MoveIndicator;
-                bool x0 = Math.Abs(input.X) <= 0.01;
-                bool y0 = Math.Abs(input.Y) <= 0.01;
-                bool z0 = Math.Abs(input.Z) <= 0.01;
+                thrustAmount = new Vector3D(
+                    Math.Abs(input.X) <= 0.01 ? thrustAmount.X : 0,
+                    Math.Abs(input.Y) <= 0.01 ? thrustAmount.Y : 0,
+                    Math.Abs(input.Z) <= 0.01 ? thrustAmount.Z : 0);
 
-                float backward = thrustAmount.Z < 0 && z0 ? -thrustAmount.Z : 0;
-                float forward = thrustAmount.Z > 0 && z0 ? thrustAmount.Z : 0;
-                float right = thrustAmount.X < 0 && x0 ? -thrustAmount.X : 0;
-                float left = thrustAmount.X > 0 && x0 ? thrustAmount.X : 0;
-                float up = thrustAmount.Y < 0 && y0 ? -thrustAmount.Y : 0;
-                float down = thrustAmount.Y > 0 && y0 ? thrustAmount.Y : 0;
-
-                foreach (var thrust in thrusters[Direction.Forward])
-                    thrust.Item1.ThrustOverride = Math.Min(forward, thrust.Item2);
-                foreach (var thrust in thrusters[Direction.Backward])
-                    thrust.Item1.ThrustOverride = backward;
-                foreach (var thrust in thrusters[Direction.Right])
-                    thrust.Item1.ThrustOverride = right;
-                foreach (var thrust in thrusters[Direction.Left])
-                    thrust.Item1.ThrustOverride = left;
-                foreach (var thrust in thrusters[Direction.Up])
-                    thrust.Item1.ThrustOverride = up;
-                foreach (var thrust in thrusters[Direction.Down])
-                    thrust.Item1.ThrustOverride = down;
-            }
-        }
-
-        private void ResetThrustOverrides()
-        {
-            foreach (var kv in thrusters)
-                for (int i = 0; i < kv.Value.Length; i++)
-                    kv.Value[i].Item1.ThrustOverride = 0;
-        }
-
-        private void UpdateThrust()
-        {
-            foreach (var kv in thrusters)
-            {
-                for (int i = 0; i < kv.Value.Length; i++)
-                {
-                    var val = kv.Value[i];
-                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustRatio;
-                    kv.Value[i] = val;
-                }
+                thrustController.SetThrusts(thrustAmount, 0);
             }
         }
 
         public void Abort()
         {
-            ResetThrustOverrides();
+            thrustController.ResetThrustOverrides();
             CruiseTerminated.Invoke(this, "Aborted");
         }
     }

@@ -1,4 +1,5 @@
-﻿using Sandbox.Game.EntityComponents;
+﻿using IngameScript.Navigation;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI.Ingame;
@@ -56,7 +57,7 @@ namespace IngameScript
         public NavModeEnum NavMode { get; set; }
         public bool IsNavIdle => NavMode == NavModeEnum.None;
 
-        private readonly Dictionary<Direction, List<IMyThrust>> thrusters = new Dictionary<Direction, List<IMyThrust>>
+        private Dictionary<Direction, List<IMyThrust>> thrusters = new Dictionary<Direction, List<IMyThrust>>
         {
             { Direction.Forward, new List<IMyThrust>() },
             { Direction.Backward, new List<IMyThrust>() },
@@ -77,10 +78,11 @@ namespace IngameScript
         private WcPbApi wcApi;
         private bool wcApiActive = false;
         private ICruiseController cruiseController;
+        private IVariableThrustController thrustController;
 
-        private readonly DateTime bootTime;
+        private DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.13-dev7";
+        public const string versionStr = "2.13-dev8";
         public static VersionInfo versionInfo = new VersionInfo(2, 13, 0);
 
         private Config config;
@@ -95,11 +97,13 @@ namespace IngameScript
             aimController = new JitAim(Me.CubeGrid.GridSizeEnum);
             profiler = new Profiler(this);
             wcApi = new WcPbApi();
+            thrustController = new VariableThrustController(thrusters, controller);
 
             try { wcApiActive = wcApi.Activate(Me); }
             catch { wcApiActive = false; }
 
             UpdateBlocks();
+            thrustController.UpdateThrusts();
             //AbortNav(false);
 
             TryRestoreNavState();
@@ -184,7 +188,11 @@ namespace IngameScript
             }
         }
 
-        private void SaveCustomDataConfig() => Me.CustomData = config.ToString();
+        private void SaveCustomDataConfig()
+        {
+            Me.CustomData = config.ToString();
+            UpdateBlocks();
+        }
 
         private void LoadCustomDataConfig()
         {
@@ -247,8 +255,8 @@ namespace IngameScript
         private void DisableThrustOverrides()
         {
             foreach (var list in thrusters.Values)
-                foreach (var thruster in list)
-                    thruster.ThrustOverridePercentage = 0;
+                for (int i = 0; i < list.Count; i++)
+                    list[i].ThrustOverridePercentage = 0;
         }
 
         private void DisableGyroOverrides()
@@ -323,20 +331,13 @@ namespace IngameScript
 
         public static Direction GetBlockDirection(Vector3D vector, MatrixD refMatrix)
         {
-            if (vector == refMatrix.Forward)
-                return Direction.Forward;
-            else if (vector == refMatrix.Backward)
-                return Direction.Backward;
-            else if (vector == refMatrix.Right)
-                return Direction.Right;
-            else if (vector == refMatrix.Left)
-                return Direction.Left;
-            else if (vector == refMatrix.Up)
-                return Direction.Up;
-            else if (vector == refMatrix.Down)
-                return Direction.Down;
-            else
-                throw new Exception();
+            if (vector == refMatrix.Forward) return Direction.Forward;
+            if (vector == refMatrix.Backward) return Direction.Backward;
+            if (vector == refMatrix.Right) return Direction.Right;
+            if (vector == refMatrix.Left) return Direction.Left;
+            if (vector == refMatrix.Up) return Direction.Up;
+            if (vector == refMatrix.Down) return Direction.Down;
+            throw new Exception();
         }
 
         private StringBuilder pbOut = new StringBuilder();

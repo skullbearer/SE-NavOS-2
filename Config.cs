@@ -47,15 +47,6 @@ namespace IngameScript
             }
 
             string[] lines = str.Split(Environment.NewLine.ToCharArray());
-            //try
-            //{
-            //    VersionInfo ver;
-            //    if (lines.Length >= 1 && VersionInfo.TryParse(lines[0].Split('|').Last().Trim(), out ver) && ver <= new VersionInfo(2, 10, 0))
-            //    {
-            //
-            //    }
-            //}
-            //catch { }
 
             Dictionary<string, string> confValues = new Dictionary<string, string>();
 

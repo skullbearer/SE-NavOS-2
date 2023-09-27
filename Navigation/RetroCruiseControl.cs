@@ -1,4 +1,5 @@
-﻿using Sandbox.ModAPI.Ingame;
+﻿using IngameScript.Navigation;
+using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    public class RetroCruiseControl : OrientControllerBase, ICruiseController, IVariableMaxOverrideThrustController
+    public class RetroCruiseControl : OrientControllerBase, ICruiseController
     {
         public enum RetroCruiseStage : byte
         {
@@ -26,6 +27,7 @@ namespace IngameScript
         const double TICK = 1.0 / 60.0;
         const double DegToRadMulti = Math.PI / 180.0;
         const double RadToDegMulti = 180.0 / Math.PI;
+        const float DAMPENER_TOLERANCE = 0.01f;
 
         public event CruiseTerminateEventDelegate CruiseTerminated = delegate { };
 
@@ -48,13 +50,12 @@ namespace IngameScript
         public double DesiredSpeed { get; }
         public float MaxThrustRatio
         {
-            get { return _maxThrustOverrideRatio; }
+            get { return thrustController.MaxThrustRatio; }
             set
             {
-                if ( _maxThrustOverrideRatio != value)
+                if (thrustController.MaxThrustRatio != value)
                 {
-                    _maxThrustOverrideRatio = value;
-                    UpdateThrust();
+                    thrustController.MaxThrustRatio = value;
                     UpdateForwardThrustAndAccel();
                 }
             }
@@ -85,28 +86,21 @@ namespace IngameScript
                 }
             }
         }
+        //how far off the aim is from the desired orientation
         private double _orientToleranceAngleRadians = 0.075 * DegToRadMulti;
         private double _orientToleranceAngleRadiansCos;
 
-        private float _maxThrustOverrideRatio = 1f;
         public double maxInitialPerpendicularVelocity = 1;
-
-        //public float reserveThrustRatio = 0.05f;
 
         //useful for overestimating stop time and dist for better cruise accuracy
         public double stopTimeAndDistanceMulti = 1.05;
 
-        //how far off the aim is from the desired orientation
-        private Dictionary<Direction, MyTuple<IMyThrust, float>[]> thrusters;
-
-        const float DAMPENER_TOLERANCE = 0.01f;
-
-        private bool counter5 = false;
-        private bool counter10 = false;
+        private IVariableThrustController thrustController;
 
         //active variables
         private RetroCruiseStage _stage;
         private int counter = -1;
+        private bool counter10 = false;
 
         //updated every 30 ticks
         private float gridMass;
@@ -136,17 +130,13 @@ namespace IngameScript
             IAimController aimControl,
             IMyShipController controller,
             IList<IMyGyro> gyros,
-            Dictionary<Direction, List<IMyThrust>> thrusters)
+            IVariableThrustController thrustController)
             : base(aimControl, controller, gyros)
         {
             this.Target = target;
             this.DesiredSpeed = desiredSpeed;
-            this.thrusters = thrusters.ToDictionary(
-                kv => kv.Key,
-                kv => thrusters[kv.Key]
-                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustRatio))
-                    .ToArray());
-
+            this.thrustController = thrustController;
+            
             Stage = RetroCruiseStage.None;
             gridMass = controller.CalculateShipMass().PhysicalMass;
 
@@ -198,38 +188,11 @@ namespace IngameScript
             .Append("\nAim Error: ").Append(((lastAimDirectionAngleRad ?? 0) * RadToDegMulti).ToString("0.000\n"));
         }
 
-        private static readonly RetroCruiseStage[] allStages = (RetroCruiseStage[])Enum.GetValues(typeof(RetroCruiseStage));
-
         private void DampenAllDirections(Vector3D shipVelocity, float tolerance = DAMPENER_TOLERANCE)
         {
             Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
             Vector3 thrustAmount = localVelocity * gridMass;
-            float backward = thrustAmount.Z < tolerance ? -thrustAmount.Z : 0;
-            float forward = thrustAmount.Z > tolerance ? thrustAmount.Z : 0;
-            float right = thrustAmount.X < tolerance ? -thrustAmount.X : 0;
-            float left = thrustAmount.X > tolerance ? thrustAmount.X : 0;
-            float up = thrustAmount.Y < tolerance ? -thrustAmount.Y : 0;
-            float down = thrustAmount.Y > tolerance ? thrustAmount.Y : 0;
-
-            foreach (var thrust in thrusters[Direction.Forward])
-                thrust.Item1.ThrustOverride = Math.Min(forward, thrust.Item2);
-            foreach (var thrust in thrusters[Direction.Backward])
-                thrust.Item1.ThrustOverride = backward;
-
-            SetSideThrustOverrides(left, right, up, down);
-        }
-
-        private void UpdateThrust()
-        {
-            foreach (var kv in thrusters)
-            {
-                for (int i = 0; i < kv.Value.Length; i++)
-                {
-                    var val = kv.Value[i];
-                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustRatio;
-                    kv.Value[i] = val;
-                }
-            }
+            thrustController.SetThrusts(thrustAmount, tolerance);
         }
 
         private void DampenSideways(Vector3D shipVelocity, float tolerance = DAMPENER_TOLERANCE)
@@ -240,26 +203,12 @@ namespace IngameScript
             float left = thrustAmount.X > tolerance ? thrustAmount.X : 0;
             float up = thrustAmount.Y < tolerance ? -thrustAmount.Y : 0;
             float down = thrustAmount.Y > tolerance ? thrustAmount.Y : 0;
-
-            SetSideThrustOverrides(left, right, up, down);
-        }
-
-        private void SetSideThrustOverrides(float left, float right, float up, float down)
-        {
-            foreach (var thrust in thrusters[Direction.Right])
-                thrust.Item1.ThrustOverride = right;
-            foreach (var thrust in thrusters[Direction.Left])
-                thrust.Item1.ThrustOverride = left;
-            foreach (var thrust in thrusters[Direction.Up])
-                thrust.Item1.ThrustOverride = up;
-            foreach (var thrust in thrusters[Direction.Down])
-                thrust.Item1.ThrustOverride = down;
+            thrustController.SetSideThrusts(left, right, up, down);
         }
 
         public void Run()
         {
             counter++;
-            bool counter5 = counter % 5 == 0;
             counter10 = counter % 10 == 0;
             bool counter30 = counter % 30 == 0;
             bool counter60 = counter % 60 == 0;
@@ -267,9 +216,9 @@ namespace IngameScript
             if (Stage == RetroCruiseStage.None)
             {
                 ResetGyroOverride();
-                ResetThrustOverrides();
+                thrustController.ResetThrustOverrides();
                 TurnOnAllThrusters();
-                UpdateThrust();
+                thrustController.UpdateThrusts();
             }
 
             if (counter10)
@@ -286,7 +235,7 @@ namespace IngameScript
             if (counter60)
             {
                 gridMass = ShipController.CalculateShipMass().PhysicalMass;
-                UpdateThrust();
+                thrustController.UpdateThrusts();
             }
 
             Vector3D myPosition = ShipController.GetPosition();
@@ -423,57 +372,38 @@ namespace IngameScript
 
         private void UpdateForwardThrustAndAccel()
         {
-            float forwardThrust = thrusters[Direction.Forward].Where(t => t.Item1.IsWorking).Sum(t => t.Item1.MaxEffectiveThrust);
+            float forwardThrust = thrustController.Thrusters[Direction.Forward].Where(t => t.Item1.IsWorking).Sum(t => t.Item1.MaxEffectiveThrust);
             forwardThrustInv = 1f / forwardThrust;
             float forwardAccel = forwardThrust / gridMass;
             forwardAccelPremultiplied = forwardAccel * MaxThrustRatio;
         }
 
-        private void ResetThrustOverrides()
-        {
-            foreach (var list in thrusters)
-                foreach (var thruster in list.Value)
-                    thruster.Item1.ThrustOverride = 0;
-        }
-
         private void ResetThrustOverridesExceptFront()
         {
-            foreach (var thruster in thrusters[Direction.Backward])
+            foreach (var thruster in thrustController.Thrusters[Direction.Backward])
                 thruster.Item1.ThrustOverride = 0;
-            ResetThrustOverridesSides();
+            thrustController.SetSideThrusts(0, 0, 0, 0);
         }
 
         private void ResetThrustOverridesExceptBack()
         {
-            foreach (var thruster in thrusters[Direction.Forward])
+            foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                 thruster.Item1.ThrustOverride = 0;
-            ResetThrustOverridesSides();
-        }
-
-        private void ResetThrustOverridesSides()
-        {
-            foreach (var thruster in thrusters[Direction.Right])
-                thruster.Item1.ThrustOverride = 0;
-            foreach (var thruster in thrusters[Direction.Left])
-                thruster.Item1.ThrustOverride = 0;
-            foreach (var thruster in thrusters[Direction.Up])
-                thruster.Item1.ThrustOverride = 0;
-            foreach (var thruster in thrusters[Direction.Down])
-                thruster.Item1.ThrustOverride = 0;
+            thrustController.SetSideThrusts(0, 0, 0, 0);
         }
 
         private void TurnOnAllThrusters()
         {
-            foreach (var list in thrusters)
-                foreach (var thruster in list.Value)
-                    thruster.Item1.Enabled = true;
+            foreach (var kv in thrustController.Thrusters)
+                for (int i = 0; i < kv.Value.Length; i++)
+                    kv.Value[i].Item1.Enabled = true;
         }
 
         private void SetDampenerState(bool enabled) => ShipController.DampenersOverride = enabled;
 
         private void OnStageChanged()
         {
-            ResetThrustOverrides();
+            thrustController.ResetThrustOverrides();
             ResetGyroOverride();
             SetDampenerState(false);
             lastAimDirectionAngleRad = null;
@@ -501,14 +431,14 @@ namespace IngameScript
             if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
             {
                 float overrideAmount = MathHelper.Clamp(((float)perpSpeed * 2 * gridMass) * forwardThrustInv, 0, MaxThrustRatio);
-                foreach (var thruster in thrusters[Direction.Forward])
+                foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                 {
                     thruster.Item1.ThrustOverridePercentage = overrideAmount;
                 }
             }
             else
             {
-                foreach (var thruster in thrusters[Direction.Forward])
+                foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                 {
                     thruster.Item1.ThrustOverride = 0;
                 }
@@ -548,7 +478,7 @@ namespace IngameScript
             {
                 noSpeedOnStart = false;
 
-                foreach (var thruster in thrusters[Direction.Forward])
+                foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                 {
                     thruster.Item1.ThrustOverridePercentage = MaxThrustRatio;
                 }
@@ -599,7 +529,7 @@ namespace IngameScript
 
                 decelerating = overrideAmount > 0;
 
-                foreach (var thruster in thrusters[Direction.Forward])
+                foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                 {
                     thruster.Item1.ThrustOverridePercentage = overrideAmount;
                 }
@@ -642,7 +572,7 @@ namespace IngameScript
 
             decelerating = overrideAmount > 0;
 
-            foreach (var thruster in thrusters[Direction.Forward])
+            foreach (var thruster in thrustController.Thrusters[Direction.Forward])
             {
                 thruster.Item1.ThrustOverridePercentage = overrideAmount;
             }
@@ -668,7 +598,7 @@ namespace IngameScript
 
         public void Terminate(string reason)
         {
-            ResetThrustOverrides();
+            thrustController.ResetThrustOverrides();
             TurnOnAllThrusters();
 
             ResetGyroOverride();
