@@ -19,7 +19,8 @@ Config (In the customdata of the pb):
 # CruiseOffsetSideDist: For GPS and X:Y:Z cruise commands, offset the target by this many meters to the side (side = a random perpendicular direction to the target from your current position)
 
 # Ship180TurnTimeSeconds: How long it takes the ship to do a 180 degree turn in seconds.
-You need to set this to equal to or more than the actual 180 turn time. It determines how early to turn for deceleration. This field is not calculated automatically.
+You need to set this to equal to or more than the actual 180 turn time. It determines when to turn for deceleration in case it can't get up to full cruise speed.
+This field is not calculated automatically, run CalibrateTurn to calculate this field. Recalibration is required whenever the mass of the ship changes significantly.
 
 Commands:
 # Cruise <DesiredSpeed> <ForwardDistanceMeters>
@@ -65,3 +66,6 @@ Example: ThrustRatio 0.6
 # Thrust Set <ratio>
 Sets thrust override ratio on forward thrusters. Example command will set forward thrusters on 50% override.
 Example: Thrust Set 0.5
+
+# CalibrateTurn
+Measure and set the Ship180TurnTimeSeconds variable in the config. Make sure the ship is not moving or rotating when this command is used.

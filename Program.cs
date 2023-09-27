@@ -46,12 +46,10 @@ namespace IngameScript
     public partial class Program : MyGridProgram
     {
         #region mdk preserve
-
         //Config is in the CustomData
 
         //lcd for logging
         const string debugLcdName = "debugLcd";
-
         #endregion mdk preserve
 
         public NavModeEnum NavMode { get; set; }
