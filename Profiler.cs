@@ -20,96 +20,93 @@ using VRageMath;
 
 namespace IngameScript
 {
-    partial class Program
+    public sealed class Profiler
     {
-        public sealed class Profiler
+        private readonly Program program;
+
+        public double RunningAverageMs => runningAverage;
+        private double AverageRuntimeMs
+        { 
+            get 
+            {
+                double sum = runtimeCollection[0];
+                for (int i = 1; i < BufferSize; i++)
+                {
+                    sum += runtimeCollection[i];
+                }
+                return (sum / BufferSize);
+            }
+        }
+        /// <summary>Use <see cref="MaxRuntimeMsFast">MaxRuntimeMsFast</see> if performance is a major concern</summary>
+        public double MaxRuntimeMs
         {
-            private readonly Program program;
-
-            public double RunningAverageMs => runningAverage;
-            private double AverageRuntimeMs
-            { 
-                get 
-                {
-                    double sum = runtimeCollection[0];
-                    for (int i = 1; i < BufferSize; i++)
-                    {
-                        sum += runtimeCollection[i];
-                    }
-                    return (sum / BufferSize);
-                }
-            }
-            /// <summary>Use <see cref="MaxRuntimeMsFast">MaxRuntimeMsFast</see> if performance is a major concern</summary>
-            public double MaxRuntimeMs
+            get
             {
-                get
+                double max = runtimeCollection[0];
+                for (int i = 1; i < BufferSize; i++)
                 {
-                    double max = runtimeCollection[0];
-                    for (int i = 1; i < BufferSize; i++)
+                    if (runtimeCollection[i] > max)
                     {
-                        if (runtimeCollection[i] > max)
-                        {
-                            max = runtimeCollection[i];
-                        }
+                        max = runtimeCollection[i];
                     }
-                    return max;
                 }
+                return max;
             }
-            public double MaxRuntimeMsFast { get; private set; }
-            public double MinRuntimeMs
+        }
+        public double MaxRuntimeMsFast { get; private set; }
+        public double MinRuntimeMs
+        {
+            get
             {
-                get
+                double min = runtimeCollection[0];
+                for (int i = 1; i < BufferSize; i++)
                 {
-                    double min = runtimeCollection[0];
-                    for (int i = 1; i < BufferSize; i++)
+                    if (runtimeCollection[i] < min)
                     {
-                        if (runtimeCollection[i] < min)
-                        {
-                            min = runtimeCollection[i];
-                        }
+                        min = runtimeCollection[i];
                     }
-                    return min;
                 }
+                return min;
             }
+        }
 
-            private readonly double[] runtimeCollection;
-            private double runningAverage;
-            private int counter = 0;
-            public readonly int BufferSize;
+        private readonly double[] runtimeCollection;
+        private double runningAverage;
+        private int counter = 0;
+        public readonly int BufferSize;
 
-            /// <summary></summary>
-            /// <param name="Program">The Program instance of this script.</param>
-            /// <param name="BufferSize">Runtime buffer size. Must be 1 or higher.</param>
-            public Profiler(Program Program, int BufferSize = 300)
-            {
-                this.program = Program;
-                this.MaxRuntimeMsFast = Program.Runtime.LastRunTimeMs;
-                this.BufferSize = MathHelper.Clamp(BufferSize, 1, int.MaxValue);
-                this.runtimeCollection = new double[this.BufferSize];
-                this.runtimeCollection[counter] = Program.Runtime.LastRunTimeMs;
-                this.counter++;
-            }
+        /// <summary></summary>
+        /// <param name="Program">The Program instance of this script.</param>
+        /// <param name="BufferSize">Runtime buffer size. Must be 1 or higher.</param>
+        public Profiler(Program Program, int BufferSize = 300)
+        {
+            this.program = Program;
+            this.MaxRuntimeMsFast = Program.Runtime.LastRunTimeMs;
+            this.BufferSize = MathHelper.Clamp(BufferSize, 1, int.MaxValue);
+            this.runtimeCollection = new double[this.BufferSize];
+            this.runtimeCollection[counter] = Program.Runtime.LastRunTimeMs;
+            this.counter++;
+        }
             
-            public void Run()
+        public void Run()
+        {
+            runningAverage -= runtimeCollection[counter] / BufferSize;
+            runningAverage += program.Runtime.LastRunTimeMs / BufferSize;
+
+            runtimeCollection[counter] = program.Runtime.LastRunTimeMs;
+
+            if (program.Runtime.LastRunTimeMs > MaxRuntimeMsFast)
             {
-                runningAverage -= runtimeCollection[counter] / BufferSize;
-                runningAverage += program.Runtime.LastRunTimeMs / BufferSize;
+                MaxRuntimeMsFast = program.Runtime.LastRunTimeMs;
+            }
 
-                runtimeCollection[counter] = program.Runtime.LastRunTimeMs;
+            counter++;
 
-                if (program.Runtime.LastRunTimeMs > MaxRuntimeMsFast)
-                {
-                    MaxRuntimeMsFast = program.Runtime.LastRunTimeMs;
-                }
-
-                counter++;
-
-                if (counter >= BufferSize)
-                {
-                    counter = 0;
-                    runningAverage = AverageRuntimeMs;
-                    MaxRuntimeMsFast = program.Runtime.LastRunTimeMs;
-                }
+            if (counter >= BufferSize)
+            {
+                counter = 0;
+                runningAverage = AverageRuntimeMs;
+                MaxRuntimeMsFast = program.Runtime.LastRunTimeMs;
             }
         }
     }
