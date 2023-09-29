@@ -94,6 +94,6 @@ namespace IngameScript
             return Major == ver2.Major && Minor == ver2.Minor && Patch == ver2.Patch;
         }
 
-        public override int GetHashCode() => HashCodeHelpers.CombineHashCodes(Major.GetHashCode(), Minor.GetHashCode(), Patch.GetHashCode());
+        public override int GetHashCode() => MyTuple.CombineHashCodes(Major.GetHashCode(), Minor.GetHashCode(), Patch.GetHashCode());
     }
 }

@@ -48,7 +48,6 @@
     <Compile Include="Navigation\Orient.cs" />
     <Compile Include="Navigation\OrientControllerBase.cs" />
     <Compile Include="Navigation\Retroburn.cs" />
-    <Compile Include="HashCodeHelpers.cs" />
     <Compile Include="Navigation\Prograde.cs" />
     <Compile Include="Navigation\RetroCruiseControl.cs" />
     <Compile Include="Navigation\ICruiseController.cs" />
