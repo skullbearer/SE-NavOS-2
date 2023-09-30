@@ -21,7 +21,7 @@ namespace IngameScript
         public string PersistStateData { get; set; } = "";
         public double MaxThrustOverrideRatio { get; set; } = 1.0;
         public bool IgnoreMaxThrustForSpeedMatch { get; set; } = false;
-        public string ShipControllerTag { get; set; } = "Nav";
+        public string ShipControllerTag { get; set; } = "Navref";
         public string ThrustGroupName { get; set; } = "NavThrust";
         public string GyroGroupName { get; set; } = "NavGyros";
         public string ConsoleLcdName { get; set; } = "consoleLcd";
