@@ -156,7 +156,7 @@ namespace IngameScript
             strb.Append("// Maximum thrust override. 0 to 1 (Dont use 0)\n");
             strb.Append($"{nameof(MaxThrustOverrideRatio)}={MaxThrustOverrideRatio}\n");
             strb.Append($"{nameof(IgnoreMaxThrustForSpeedMatch)}={IgnoreMaxThrustForSpeedMatch}\n\n");
-            strb.Append("// Tag for the controller used for ship orientation");
+            strb.Append("// Tag for the controller used for ship orientation\n");
             strb.Append($"{nameof(ShipControllerTag)}={ShipControllerTag}\n\n");
             strb.Append("// If this group doesn't exist it uses all thrusters\n");
             strb.Append($"{nameof(ThrustGroupName)}={ThrustGroupName}\n\n");
