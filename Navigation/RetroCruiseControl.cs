@@ -1,5 +1,4 @@
-﻿using IngameScript.Navigation;
-using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,21 +73,7 @@ namespace IngameScript
         /// <summary>
         /// aim/orient tolerance in radians
         /// </summary>
-        public double OrientToleranceAngleRadians
-        {
-            get { return _orientToleranceAngleRadians; }
-            set
-            {
-                if (_orientToleranceAngleRadians != value)
-                {
-                    _orientToleranceAngleRadians = value;
-                    _orientToleranceAngleRadiansCos = Math.Cos(value);
-                }
-            }
-        }
-        //how far off the aim is from the desired orientation
-        private double _orientToleranceAngleRadians = 0.075 * DegToRadMulti;
-        private double _orientToleranceAngleRadiansCos;
+        public double OrientToleranceAngleRadians { get; set; } = 0.075 * DegToRadMulti;
 
         public double maxInitialPerpendicularVelocity = 1;
 
@@ -108,20 +93,13 @@ namespace IngameScript
         private float forwardThrustInv;
 
         //updated every 10 ticks
+        //how far off the aim is from the desired direction
         private double? lastAimDirectionAngleRad = null;
         private double estimatedTimeOfArrival;
 
         //updated every tick
-        private double accelTime;
-        private double timeToStartDecel;
-        private double cruiseTime;
-        private double currentStopDist;
-        private double actualStopTime;
-        private double distanceToTarget;
-        private Vector3D myVelocity;
-        private Vector3D targetDirection;
-        private Vector3D gravityAtPos;
-        private double vmax;
+        private double accelTime, timeToStartDecel, cruiseTime, currentStopDist, actualStopTime, distanceToTarget, vmax;
+        private Vector3D myVelocity, targetDirection, gravityAtPos;
         private bool noSpeedOnStart;
 
         public RetroCruiseControl(
@@ -392,7 +370,7 @@ namespace IngameScript
             thrustController.SetSideThrusts(0, 0, 0, 0);
         }
 
-        private void TurnOnAllThrusters()
+        public void TurnOnAllThrusters()
         {
             foreach (var kv in thrustController.Thrusters)
                 for (int i = 0; i < kv.Value.Length; i++)

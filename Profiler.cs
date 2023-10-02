@@ -20,21 +20,19 @@ using VRageMath;
 
 namespace IngameScript
 {
-    public sealed class Profiler
+    internal sealed class Profiler
     {
-        private readonly Program program;
-
-        public double RunningAverageMs => runningAverage;
+        public double RunningAverageMs { get; private set; }
         private double AverageRuntimeMs
-        { 
-            get 
+        {
+            get
             {
                 double sum = runtimeCollection[0];
                 for (int i = 1; i < BufferSize; i++)
                 {
                     sum += runtimeCollection[i];
                 }
-                return (sum / BufferSize);
+                return sum * bufferSizeInv;
             }
         }
         /// <summary>Use <see cref="MaxRuntimeMsFast">MaxRuntimeMsFast</see> if performance is a major concern</summary>
@@ -70,9 +68,11 @@ namespace IngameScript
             }
         }
 
-        private readonly double[] runtimeCollection;
-        private double runningAverage;
+        private double bufferSizeInv;
+        private IMyGridProgramRuntimeInfo runtimeInfo;
+        private double[] runtimeCollection;
         private int counter = 0;
+
         public readonly int BufferSize;
 
         /// <summary></summary>
@@ -80,24 +80,25 @@ namespace IngameScript
         /// <param name="BufferSize">Runtime buffer size. Must be 1 or higher.</param>
         public Profiler(Program Program, int BufferSize = 300)
         {
-            this.program = Program;
+            this.runtimeInfo = Program.Runtime;
             this.MaxRuntimeMsFast = Program.Runtime.LastRunTimeMs;
             this.BufferSize = MathHelper.Clamp(BufferSize, 1, int.MaxValue);
+            this.bufferSizeInv = 1.0 / this.BufferSize;
             this.runtimeCollection = new double[this.BufferSize];
             this.runtimeCollection[counter] = Program.Runtime.LastRunTimeMs;
             this.counter++;
         }
-            
+
         public void Run()
         {
-            runningAverage -= runtimeCollection[counter] / BufferSize;
-            runningAverage += program.Runtime.LastRunTimeMs / BufferSize;
+            RunningAverageMs -= runtimeCollection[counter] * bufferSizeInv;
+            RunningAverageMs += runtimeInfo.LastRunTimeMs * bufferSizeInv;
 
-            runtimeCollection[counter] = program.Runtime.LastRunTimeMs;
+            runtimeCollection[counter] = runtimeInfo.LastRunTimeMs;
 
-            if (program.Runtime.LastRunTimeMs > MaxRuntimeMsFast)
+            if (runtimeInfo.LastRunTimeMs > MaxRuntimeMsFast)
             {
-                MaxRuntimeMsFast = program.Runtime.LastRunTimeMs;
+                MaxRuntimeMsFast = runtimeInfo.LastRunTimeMs;
             }
 
             counter++;
@@ -105,8 +106,9 @@ namespace IngameScript
             if (counter >= BufferSize)
             {
                 counter = 0;
-                runningAverage = AverageRuntimeMs;
-                MaxRuntimeMsFast = program.Runtime.LastRunTimeMs;
+                //Correct floating point drift
+                RunningAverageMs = AverageRuntimeMs;
+                MaxRuntimeMsFast = runtimeInfo.LastRunTimeMs;
             }
         }
     }

@@ -66,7 +66,7 @@ namespace IngameScript
             return true;
         }
 
-        protected void ResetGyroOverride()
+        public void ResetGyroOverride()
         {
             if (GyroInUse != null)
             {

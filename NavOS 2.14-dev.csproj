@@ -45,6 +45,7 @@
     <Compile Include="Navigation\CalibrateTurnTime.cs" />
     <Compile Include="Navigation\IThrustController.cs" />
     <Compile Include="Navigation\IVariableThrustController.cs" />
+    <Compile Include="Navigation\Journey.cs" />
     <Compile Include="Navigation\Orient.cs" />
     <Compile Include="Navigation\OrientControllerBase.cs" />
     <Compile Include="Navigation\Retroburn.cs" />

@@ -33,8 +33,8 @@ namespace IngameScript
 
         public void AppendStatus(StringBuilder strb)
         {
-            strb.Append("Calibrating Turn Time...\n");
-            strb.Append("Elapsed Ms: ").Append(elapsedTimeMs.ToString("0"));
+            strb.Append("\nCalibrating Turn Time...\n");
+            strb.Append("Elapsed Ms: ").Append(elapsedTimeMs.ToString("0\n"));
         }
 
         public void Run()
@@ -51,7 +51,7 @@ namespace IngameScript
         }
 
         public void Abort() => Terminate("Aborted");
-        private void Complete() => Terminate($"Calibration Completed. Turn time is {_config.Ship180TurnTimeSeconds} seconds.");
+        private void Complete() => Terminate($"Calibration Completed.\nTurn time is {_config.Ship180TurnTimeSeconds} seconds.");
 
         public void Terminate(string reason)
         {

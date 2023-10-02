@@ -1,5 +1,4 @@
-﻿using IngameScript.Navigation;
-using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,15 +17,15 @@ namespace IngameScript
                 return;
             }
 
-            argument = argument.ToLower();
+            string argLower = argument.ToLower();
 
-            if (argument.Contains("abort"))
+            if (argLower.Contains("abort"))
             {
                 AbortNav(false);
                 return;
             }
 
-            string[] args = argument.Split(' ');
+            string[] args = argLower.Split(' ');
 
             if (args.Length < 1)
             {
@@ -36,7 +35,7 @@ namespace IngameScript
             if (args[0].Equals("reload"))
             {
                 AbortNav(false);
-                LoadCustomDataConfig();
+                LoadConfig();
                 return;
             }
             else if (args[0].Equals("maxthrustoverrideratio") || args[0].Equals("thrustratio"))
@@ -49,7 +48,7 @@ namespace IngameScript
 
             if (args.Length >= 3 && args[0].Equals("cruise"))
             {
-                cmdAction = () => CommandCruise(args, argument);
+                cmdAction = () => CommandCruise(args, argLower);
             }
             else if (args[0] == "retro" || args[0] == "retrograde")
             {
@@ -69,7 +68,7 @@ namespace IngameScript
             }
             else if (args[0] == "orient")
             {
-                cmdAction = () => CommandOrient(argument);
+                cmdAction = () => CommandOrient(argLower);
             }
             else if (args[0] == "calibrateturn")
             {
@@ -93,6 +92,15 @@ namespace IngameScript
                         }
                     }
                 }
+            }
+            else if (args.Length >= 2 && args[0] == "journey")
+            {
+                optionalInfo = "";
+                string failReason;
+                if (args[1] == "init")
+                    cmdAction = InitJourney;
+                else if (cruiseController is Journey && !((Journey)cruiseController).HandleJourneyCommand(args, argument, out failReason))
+                    optionalInfo = failReason;
             }
 
             if (cmdAction != null)
@@ -127,7 +135,7 @@ namespace IngameScript
             result = MathHelper.Clamp(result, 0, 1);
 
             config.MaxThrustOverrideRatio = result;
-            SaveCustomDataConfig();
+            SaveConfig();
 
             if (cruiseController is SpeedMatch)
                 thrustController.MaxThrustRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)result;
@@ -221,7 +229,7 @@ namespace IngameScript
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Cruise}|{speed}";
             Storage = target.ToString();
-            SaveCustomDataConfig();
+            SaveConfig();
         }
 
         private void CommandRetrograde()
@@ -230,7 +238,7 @@ namespace IngameScript
             cruiseController = new Retrograde(aimController, controller, gyros);
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retrograde}";
-            SaveCustomDataConfig();
+            SaveConfig();
         }
 
         private void CommandRetroburn()
@@ -240,7 +248,7 @@ namespace IngameScript
             cruiseController = new Retroburn(aimController, controller, gyros, thrustController);
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Retroburn}";
-            SaveCustomDataConfig();
+            SaveConfig();
         }
 
         private void CommandPrograde()
@@ -249,7 +257,7 @@ namespace IngameScript
             cruiseController = new Prograde(aimController, controller, gyros);
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Prograde}";
-            SaveCustomDataConfig();
+            SaveConfig();
         }
 
         private void CommandSpeedMatch()
@@ -305,7 +313,7 @@ namespace IngameScript
             cruiseController = new CalibrateTurnTime(config, aimController, controller, gyros);
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.CalibrateTurnTime}";
-            SaveCustomDataConfig();
+            SaveConfig();
         }
 
         private void InitOrient(Vector3D target)
@@ -315,7 +323,7 @@ namespace IngameScript
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Orient}";
             Storage = target.ToString();
-            SaveCustomDataConfig();
+            SaveConfig();
         }
 
         private void InitSpeedMatch(long targetId)
@@ -325,7 +333,15 @@ namespace IngameScript
             cruiseController = new SpeedMatch(targetId, wcApi, controller, Me, thrustController);
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.SpeedMatch}|{targetId}";
-            SaveCustomDataConfig();
+            SaveConfig();
+        }
+
+        private void InitJourney()
+        {
+            NavMode = NavModeEnum.Journey;
+            thrustController.MaxThrustRatio = (float)config.MaxThrustOverrideRatio;
+            cruiseController = new Journey(aimController, controller, gyros, config.Ship180TurnTimeSeconds * 1.5, thrustController, this);
+            cruiseController.CruiseTerminated += CruiseTerminated;
         }
     }
 }

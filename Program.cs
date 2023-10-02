@@ -1,5 +1,4 @@
-﻿using IngameScript.Navigation;
-using Sandbox.Game.EntityComponents;
+﻿using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI.Ingame;
@@ -31,6 +30,7 @@ namespace IngameScript
         Retroburn = 5,
         Orient = 6,
         CalibrateTurnTime = 7,
+        Journey = 8,
     }
 
     public enum Direction : byte
@@ -80,14 +80,14 @@ namespace IngameScript
 
         private DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.13.1";
-        public static VersionInfo versionInfo = new VersionInfo(2, 13, 1);
+        public const string versionStr = "2.14-dev";
+        public static VersionInfo versionInfo = new VersionInfo(2, 14, 0);
 
-        private Config config;
+        public Config config;
 
         public Program()
         {
-            LoadCustomDataConfig();
+            LoadConfig();
 
             Runtime.UpdateFrequency = UpdateFrequency.Update1 | UpdateFrequency.Update10;
             bootTime = DateTime.UtcNow;
@@ -172,6 +172,18 @@ namespace IngameScript
                     else
                         stateStr = null;
                 }
+                else if (mode == NavModeEnum.Journey)
+                {
+                    List<Journey.Waypoint> sequence;
+                    int step;
+                    if (Journey.TryParseWaypoints(config.PersistStateData, Storage, out sequence, out step))
+                    {
+                        NavMode = NavModeEnum.Journey;
+                        thrustController.MaxThrustRatio = (float)config.MaxThrustOverrideRatio;
+                        cruiseController = new Journey(aimController, controller, gyros, config.Ship180TurnTimeSeconds * 1.5, thrustController, this, sequence, step);
+                        cruiseController.CruiseTerminated += CruiseTerminated;
+                    }
+                }
 
                 if (stateStr == null)
                     optionalInfo = $"Failed to restore {mode}";
@@ -181,24 +193,24 @@ namespace IngameScript
             catch (Exception e)
             {
                 config.PersistStateData = "";
-                SaveCustomDataConfig();
+                SaveConfig();
                 optionalInfo = e.ToString();
             }
         }
 
-        private void SaveCustomDataConfig()
+        private void SaveConfig()
         {
             Me.CustomData = config.ToString();
             UpdateBlocks();
         }
 
-        private void LoadCustomDataConfig()
+        private void LoadConfig()
         {
             if (!Config.TryParse(Me.CustomData, out config))
             {
                 config = Config.Default;
             }
-            SaveCustomDataConfig();
+            SaveConfig();
         }
 
         public void Main(string argument, UpdateType updateSource)
@@ -235,7 +247,7 @@ namespace IngameScript
             if (saveconfig)
             {
                 config.PersistStateData = "";
-                SaveCustomDataConfig();
+                SaveConfig();
             }
         }
 
@@ -247,7 +259,7 @@ namespace IngameScript
             optionalInfo = $"{source.Name} Terminated.\nReason: {reason}";
 
             config.PersistStateData = "";
-            SaveCustomDataConfig();
+            SaveConfig();
         }
 
         private void DisableThrustOverrides()
@@ -346,7 +358,7 @@ namespace IngameScript
             //PB Output
             const string programInfoStr = programName + " v" + versionStr + " | ";
             const string commandStr = @"
--- Commands --
+All Commands:
 Cruise <Speed> <distance>
 Cruise <Speed> <X:Y:Z>
 Cruise <Speed> <GPS>
@@ -360,20 +372,20 @@ Reload (the config)
 ThrustRatio <ratio0to1>
 Thrust Set <ratio>
 CalibrateTurn
+Journey Init
 ";
             string avgRtStr = profiler.RunningAverageMs.ToString("0.0000");
 
             pbOut.Append(programInfoStr).Append(avgRtStr);
             TimeSpan upTime = DateTime.UtcNow - bootTime;
-            pbOut.Append("\nUptime: ").AppendLine(SecondsToDuration(upTime.TotalSeconds));
+            pbOut.Append("\nUptime: ").Append(SecondsToDuration(upTime.TotalSeconds));
+            pbOut.Append("\nNavMode: ").AppendLine(NavMode.ToString());
 
             if (optionalInfo.Length > 0)
             {
                 pbOut.AppendLine();
                 pbOut.AppendLine(optionalInfo);
             }
-
-            pbOut.Append("\nNavMode: ").Append(NavMode.ToString()).AppendLine();
 
             AppendNavInfo(pbOut);
 
@@ -444,5 +456,7 @@ CalibrateTurn
         }
 
         public static void Log(string message) => debug?.AppendLine(message);
+
+        public void SetStorage(string str) => Storage = str;
     }
 }

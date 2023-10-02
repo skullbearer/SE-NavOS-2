@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using VRageMath;
 
-namespace IngameScript.Navigation
+namespace IngameScript
 {
     public interface IThrustController
     {

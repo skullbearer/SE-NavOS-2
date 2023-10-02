@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IngameScript
 {
-    internal class Config
+    public class Config
     {
         public enum OffsetType
         {
@@ -21,12 +21,10 @@ namespace IngameScript
         public string PersistStateData { get; set; } = "";
         public double MaxThrustOverrideRatio { get; set; } = 1.0;
         public bool IgnoreMaxThrustForSpeedMatch { get; set; } = false;
-        public string ShipControllerTag { get; set; } = "Navref";
+        public string ShipControllerTag { get; set; } = "Nav";
         public string ThrustGroupName { get; set; } = "NavThrust";
         public string GyroGroupName { get; set; } = "NavGyros";
         public string ConsoleLcdName { get; set; } = "consoleLcd";
-        private double CruiseOffset { get; set; } = 0;
-        private OffsetType OffsetDirection { get; set; } = OffsetType.None;
         public double CruiseOffsetDist { get; set; } = 0;
         public double CruiseOffsetSideDist { get; set; } = 0;
         public double Ship180TurnTimeSeconds { get; set; } = 10.0;
@@ -115,13 +113,13 @@ namespace IngameScript
             }
 
             //support for v1.10 or older configs
-            if (confValues.TryGetValue(nameof(OffsetDirection), out result))
+            if (confValues.TryGetValue("OffsetDirection", out result))
             {
                 OffsetType enumResult;
                 double val;
                 if (Enum.TryParse<OffsetType>(result, true, out enumResult) &&
                     enumResult != OffsetType.None &&
-                    confValues.TryGetValue(nameof(CruiseOffset), out result) &&
+                    confValues.TryGetValue("CruiseOffset", out result) &&
                     double.TryParse(result, out val))
                 {
                     if (enumResult == OffsetType.Side)

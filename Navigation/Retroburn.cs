@@ -1,5 +1,4 @@
-﻿using IngameScript.Navigation;
-using Sandbox.Game.Entities;
+﻿using Sandbox.Game.Entities;
 using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;

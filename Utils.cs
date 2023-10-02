@@ -26,11 +26,22 @@ namespace IngameScript
             return strb;
         }
 
-        public static string ToMinutesAndSeconds(double totalSeconds)
+        public static bool TryParseGps(string str, out string name, out Vector3D result)
         {
-            int minutes = (int)totalSeconds / 60;
-            totalSeconds %= 60;
-            return $"{minutes}:{totalSeconds:00.0}";
+            name = default(string);
+            result = default(Vector3D);
+            int startIndex = str.IndexOf("gps:", StringComparison.CurrentCultureIgnoreCase);
+            if (startIndex < 0)
+                return false;
+            string[] args = str.Substring(startIndex).Split(':');
+            if (args.Length < 5)
+                return false;
+            name = args[1];
+            double x, y, z;
+            if (!double.TryParse(args[2], out x) || !double.TryParse(args[3], out y) || !double.TryParse(args[4], out z))
+                return false;
+            result = new Vector3D(x, y, z);
+            return true;
         }
     }
 }
