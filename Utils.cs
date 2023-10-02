@@ -7,7 +7,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    public static class Extensions
+    public static class Utils
     {
         public static Vector3D SafeNormalize(this Vector3D a)
         {

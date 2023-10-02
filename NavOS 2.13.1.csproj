@@ -41,7 +41,7 @@
     <Compile Include="Config.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="CoreSystemsPbApi.cs" />
-    <Compile Include="Extensions.cs" />
+    <Compile Include="Utils.cs" />
     <Compile Include="Navigation\CalibrateTurnTime.cs" />
     <Compile Include="Navigation\IThrustController.cs" />
     <Compile Include="Navigation\IVariableThrustController.cs" />
