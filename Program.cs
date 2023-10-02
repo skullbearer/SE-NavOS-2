@@ -276,7 +276,7 @@ namespace IngameScript
             }
 
             var blocks = new List<IMyTerminalBlock>();
-            GridTerminalSystem.GetBlocksOfType(blocks, i => i.IsSameConstructAs(Me));
+            GridTerminalSystem.GetBlocksOfType(blocks, i => i.CubeGrid == Me.CubeGrid);
 
             var controllers = blocks.OfType<IMyShipController>().Where(b => b.CustomName.Contains(config.ShipControllerTag)).ToList();
             if (controllers.Count == 0)
@@ -285,10 +285,10 @@ namespace IngameScript
 
 
             var tempThrusters = new List<IMyThrust>();
-            GridTerminalSystem.GetBlockGroupWithName(config.ThrustGroupName)?.GetBlocksOfType(tempThrusters, i => i.IsSameConstructAs(Me));
+            GridTerminalSystem.GetBlockGroupWithName(config.ThrustGroupName)?.GetBlocksOfType(tempThrusters, i => i.CubeGrid == Me.CubeGrid);
 
             if (tempThrusters.Count == 0)
-                GridTerminalSystem.GetBlocksOfType(tempThrusters, i => i.IsSameConstructAs(Me));
+                GridTerminalSystem.GetBlocksOfType(tempThrusters, i => i.CubeGrid == Me.CubeGrid);
 
             if (tempThrusters.Count == 0)
                 throw new Exception("bruh, this ship's got no thrusters!!");
@@ -306,10 +306,10 @@ namespace IngameScript
                 }
             }
 
-            GridTerminalSystem.GetBlockGroupWithName(config.GyroGroupName)?.GetBlocksOfType(gyros, i => i.IsSameConstructAs(Me) && i.IsFunctional);
+            GridTerminalSystem.GetBlockGroupWithName(config.GyroGroupName)?.GetBlocksOfType(gyros, i => i.CubeGrid == Me.CubeGrid && i.IsFunctional);
 
             if (gyros.Count == 0)
-                GridTerminalSystem.GetBlocksOfType(gyros, i => i.IsSameConstructAs(Me) && i.IsFunctional);
+                GridTerminalSystem.GetBlocksOfType(gyros, i => i.CubeGrid == Me.CubeGrid && i.IsFunctional);
 
             if (gyros.Count == 0)
                 throw new Exception("No gyros");
@@ -335,7 +335,7 @@ namespace IngameScript
             if (vector == refMatrix.Left) return Direction.Left;
             if (vector == refMatrix.Up) return Direction.Up;
             if (vector == refMatrix.Down) return Direction.Down;
-            throw new Exception();
+            throw new Exception("Unknown direction");
         }
 
         private StringBuilder pbOut = new StringBuilder();
