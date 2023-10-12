@@ -156,10 +156,6 @@ namespace IngameScript
                 {
                     targetOffset += Vector3D.CalculatePerpendicularVector(step.Target - shipController.GetPosition()) * prog.config.CruiseOffsetSideDist;
                 }
-                if (prog.config.CruiseOffsetDist > 0)
-                {
-                    targetOffset += (step.Target - shipController.GetPosition()).SafeNormalize() * -prog.config.CruiseOffsetDist;
-                }
             }
 
             started = true;

@@ -204,10 +204,6 @@ namespace IngameScript
                     {
                         offsetTarget += Vector3D.CalculatePerpendicularVector(target - controller.GetPosition()) * config.CruiseOffsetSideDist;
                     }
-                    if (config.CruiseOffsetDist > 0)
-                    {
-                        offsetTarget += (target - controller.GetPosition()).SafeNormalize() * -config.CruiseOffsetDist;
-                    }
                 }
 
                 InitRetroCruise(target + offsetTarget, desiredSpeed);

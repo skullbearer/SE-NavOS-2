@@ -25,7 +25,6 @@ namespace IngameScript
         public string ThrustGroupName { get; set; } = "NavThrust";
         public string GyroGroupName { get; set; } = "NavGyros";
         public string ConsoleLcdName { get; set; } = "consoleLcd";
-        public double CruiseOffsetDist { get; set; } = 0;
         public double CruiseOffsetSideDist { get; set; } = 0;
         public double Ship180TurnTimeSeconds { get; set; } = 10.0;
 
@@ -98,13 +97,6 @@ namespace IngameScript
             if (confValues.TryGetValue(nameof(ConsoleLcdName), out result))
                 conf.ConsoleLcdName = result;
 
-            if (confValues.TryGetValue(nameof(CruiseOffsetDist), out result))
-            {
-                double val;
-                if (double.TryParse(result, out val))
-                    conf.CruiseOffsetDist += val;
-            }
-
             if (confValues.TryGetValue(nameof(CruiseOffsetSideDist), out result))
             {
                 double val;
@@ -125,10 +117,6 @@ namespace IngameScript
                     if (enumResult == OffsetType.Side)
                     {
                         conf.CruiseOffsetSideDist += val;
-                    }
-                    else if (enumResult == OffsetType.Forward)
-                    {
-                        conf.CruiseOffsetDist += val;
                     }
                 }
             }
@@ -163,7 +151,6 @@ namespace IngameScript
             strb.Append("// Copies pb output to this lcd is it exists\n");
             strb.Append($"{nameof(ConsoleLcdName)}={ConsoleLcdName}\n\n");
             strb.Append("// Cruise offset distances in meters\n");
-            strb.Append($"{nameof(CruiseOffsetDist)}={CruiseOffsetDist}\n");
             strb.Append($"{nameof(CruiseOffsetSideDist)}={CruiseOffsetSideDist}\n\n");
             strb.Append("// Time for the ship to do a 180 degree turn in seconds\n");
             strb.Append($"{nameof(Ship180TurnTimeSeconds)}={Ship180TurnTimeSeconds}");

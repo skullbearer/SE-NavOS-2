@@ -80,8 +80,8 @@ namespace IngameScript
 
         private DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.14-dev";
-        public static VersionInfo versionInfo = new VersionInfo(2, 14, 0);
+        public const string versionStr = "2.14.1-dev";
+        public static VersionInfo versionInfo = new VersionInfo(2, 14, 1);
 
         public Config config;
 
@@ -396,7 +396,6 @@ Journey Init
             .Append(nameof(config.ThrustGroupName)).Append('=').AppendLine(config.ThrustGroupName)
             .Append(nameof(config.GyroGroupName)).Append('=').AppendLine(config.GyroGroupName)
             .Append(nameof(config.ConsoleLcdName)).Append('=').AppendLine(config.ConsoleLcdName)
-            .Append(nameof(config.CruiseOffsetDist)).Append('=').AppendLine(config.CruiseOffsetDist.ToString())
             .Append(nameof(config.CruiseOffsetSideDist)).Append('=').AppendLine(config.CruiseOffsetSideDist.ToString())
             .Append(nameof(config.Ship180TurnTimeSeconds)).Append('=').AppendLine(config.Ship180TurnTimeSeconds.ToString());
 
