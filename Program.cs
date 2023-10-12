@@ -389,15 +389,16 @@ Journey Init
 
             AppendNavInfo(pbOut);
 
-            pbOut.Append("\n-- Loaded Config --\n")
-            .Append(nameof(config.MaxThrustOverrideRatio)).Append('=').AppendLine(config.MaxThrustOverrideRatio.ToString())
-            .Append(nameof(config.IgnoreMaxThrustForSpeedMatch)).Append('=').AppendLine(config.IgnoreMaxThrustForSpeedMatch.ToString())
-            .Append(nameof(config.ShipControllerTag)).Append('=').AppendLine(config.ShipControllerTag)
-            .Append(nameof(config.ThrustGroupName)).Append('=').AppendLine(config.ThrustGroupName)
-            .Append(nameof(config.GyroGroupName)).Append('=').AppendLine(config.GyroGroupName)
-            .Append(nameof(config.ConsoleLcdName)).Append('=').AppendLine(config.ConsoleLcdName)
-            .Append(nameof(config.CruiseOffsetSideDist)).Append('=').AppendLine(config.CruiseOffsetSideDist.ToString())
-            .Append(nameof(config.Ship180TurnTimeSeconds)).Append('=').AppendLine(config.Ship180TurnTimeSeconds.ToString());
+            pbOut.Append("\n-- Loaded Config --\n" +
+                nameof(config.MaxThrustOverrideRatio) + "=" + config.MaxThrustOverrideRatio.ToString() + "\n" +
+                nameof(config.IgnoreMaxThrustForSpeedMatch) + "=" + config.IgnoreMaxThrustForSpeedMatch.ToString() + "\n" +
+                nameof(config.ShipControllerTag) + "=" + config.ShipControllerTag + "\n" +
+                nameof(config.ThrustGroupName) + "=" + config.ThrustGroupName + "\n" +
+                nameof(config.GyroGroupName) + "=" + config.GyroGroupName + "\n" +
+                nameof(config.ConsoleLcdName) + "=" + config.ConsoleLcdName + "\n" +
+                nameof(config.CruiseOffsetDist) + "=" + config.CruiseOffsetDist.ToString() + "\n" +
+                nameof(config.CruiseOffsetSideDist) + "=" + config.CruiseOffsetSideDist.ToString() + "\n" +
+                nameof(config.Ship180TurnTimeSeconds) + "=" + config.Ship180TurnTimeSeconds.ToString() + "\n");
 
             consoleLcd?.WriteText(pbOut);
 

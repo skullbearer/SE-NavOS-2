@@ -200,6 +200,15 @@ namespace IngameScript
 
                 if (!distanceCruise)
                 {
+                    if (config.CruiseOffsetDist > 0)
+                    {
+                        if (config.CruiseOffsetSideDist == 0)
+                        {
+                            optionalInfo = "Side offset cannot be zero when using offset";
+                            return;
+                        }
+                        offsetTarget += (target - controller.GetPosition()).SafeNormalize() * -config.CruiseOffsetDist;
+                    }
                     if (config.CruiseOffsetSideDist > 0)
                     {
                         offsetTarget += Vector3D.CalculatePerpendicularVector(target - controller.GetPosition()) * config.CruiseOffsetSideDist;
