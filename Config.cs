@@ -149,25 +149,27 @@ namespace IngameScript
         {
             StringBuilder strb = new StringBuilder();
 
-            strb.Append($"NavConfig | {Program.versionInfo.ToString(false)} | {ConfigVersion.ToString(false)}\n");
-            strb.Append("// Remember to recompile after you change the config!\n");
-            strb.Append($"{nameof(PersistStateData)}={PersistStateData}\n\n");
-            strb.Append("// Maximum thrust override. 0 to 1 (Dont use 0)\n");
-            strb.Append($"{nameof(MaxThrustOverrideRatio)}={MaxThrustOverrideRatio}\n");
-            strb.Append($"{nameof(IgnoreMaxThrustForSpeedMatch)}={IgnoreMaxThrustForSpeedMatch}\n\n");
-            strb.Append("// Tag for the controller used for ship orientation\n");
-            strb.Append($"{nameof(ShipControllerTag)}={ShipControllerTag}\n\n");
-            strb.Append("// If this group doesn't exist it uses all thrusters\n");
-            strb.Append($"{nameof(ThrustGroupName)}={ThrustGroupName}\n\n");
-            strb.Append("// If this group doesn't exist it uses all gyros\n");
-            strb.Append($"{nameof(GyroGroupName)}={GyroGroupName}\n\n");
-            strb.Append("// Copies pb output to this lcd is it exists\n");
-            strb.Append($"{nameof(ConsoleLcdName)}={ConsoleLcdName}\n\n");
-            strb.Append("// Cruise offset distances in meters\n");
-            strb.Append($"{nameof(CruiseOffsetDist)}={CruiseOffsetDist}\n");
-            strb.Append($"{nameof(CruiseOffsetSideDist)}={CruiseOffsetSideDist}\n\n");
-            strb.Append("// Time for the ship to do a 180 degree turn in seconds\n");
-            strb.Append($"{nameof(Ship180TurnTimeSeconds)}={Ship180TurnTimeSeconds}");
+            strb.Append($"NavConfig | {Program.versionInfo.ToString(false)} | {ConfigVersion.ToString(false)}");
+            strb.Append("\n// Remember to recompile after you change the config!");
+            strb.Append($"\n{nameof(PersistStateData)}={PersistStateData}");
+            strb.Append("\n\n// Maximum thrust override. 0 to 1 (Dont use 0)");
+            strb.Append($"\n{nameof(MaxThrustOverrideRatio)}={MaxThrustOverrideRatio}");
+            strb.Append($"\n{nameof(IgnoreMaxThrustForSpeedMatch)}={IgnoreMaxThrustForSpeedMatch}");
+            strb.Append("\n\n// Tag for the controller used for ship orientation");
+            strb.Append($"\n{nameof(ShipControllerTag)}={ShipControllerTag}");
+            strb.Append("\n\n// If this group doesn't exist it uses all thrusters");
+            strb.Append($"\n{nameof(ThrustGroupName)}={ThrustGroupName}");
+            strb.Append("\n\n// If this group doesn't exist it uses all gyros");
+            strb.Append($"\n{nameof(GyroGroupName)}={GyroGroupName}");
+            strb.Append("\n\n// Copies pb output to this lcd is it exists");
+            strb.Append($"\n{nameof(ConsoleLcdName)}={ConsoleLcdName}");
+            strb.Append("\n\n// Cruise offset distances in meters");
+            strb.Append($"\n{nameof(CruiseOffsetDist)}={CruiseOffsetDist}");
+            strb.Append($"\n{nameof(CruiseOffsetSideDist)}={CruiseOffsetSideDist}");
+            strb.Append("\n\n// Time for the ship to do a 180 degree turn in seconds");
+            strb.Append($"\n{nameof(Ship180TurnTimeSeconds)}={Ship180TurnTimeSeconds}");
+            strb.Append("\n\n// Keeps the ship oriented to the target and maintain speed until decel time");
+            strb.Append($"\n{nameof(MaintainDesiredSpeed)}={MaintainDesiredSpeed}");
 
             return strb.ToString();
         }

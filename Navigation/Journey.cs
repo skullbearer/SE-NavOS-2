@@ -164,7 +164,7 @@ namespace IngameScript
 
             started = true;
             currentStep = index;
-            cruiseControl = new RetroCruiseControl(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustControl)
+            cruiseControl = new RetroCruiseControl(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustControl, prog.config)
             {
                 decelStartMarginSeconds = this.decelStartMarginSeconds,
             };
