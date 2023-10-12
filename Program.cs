@@ -403,24 +403,24 @@ Journey Init
             consoleLcd?.WriteText(pbOut);
 
             if (debugLcd != null)
-                pbOut.Append("\nDebug: ").Append(debugLcd != null).AppendLine();
+                pbOut.Append("\nDebug: ").Append(debugLcd != null);
 
             pbOut.Append(commandStr)
 
             .Append("\n-- Detected Blocks --")
-            .Append("\nConsoleLcd: ").Append(consoleLcd != null)
-            .Append("\nDebugLcd: ").Append(debugLcd != null).AppendLine()
-            .Append(thrusters[Direction.Forward].Count).Append(" Forward Thrusters\n")
-            .Append(thrusters[Direction.Backward].Count).Append(" Backward Thrusters\n")
-            .Append(thrusters[Direction.Right].Count).Append(" Right Thrusters\n")
-            .Append(thrusters[Direction.Left].Count).Append(" Left Thrusters\n")
-            .Append(thrusters[Direction.Up].Count).Append(" Up Thrusters\n")
-            .Append(thrusters[Direction.Down].Count).Append(" Down Thrusters\n")
-            .Append(gyros.Count).Append(" Gyros")
+            .Append("\nConsoleLcd: " + (consoleLcd != null))
+            .Append("\nDebugLcd: " + (debugLcd != null)).AppendLine()
+            .Append(thrusters[Direction.Forward].Count + " Forward Thrusters\n")
+            .Append(thrusters[Direction.Backward].Count + " Backward Thrusters\n")
+            .Append(thrusters[Direction.Right].Count + " Right Thrusters\n")
+            .Append(thrusters[Direction.Left].Count + " Left Thrusters\n")
+            .Append(thrusters[Direction.Up].Count + " Up Thrusters\n")
+            .Append(thrusters[Direction.Down].Count + " Down Thrusters\n")
+            .Append(gyros.Count + " Gyros")
             .Append("\n\n-- Runtime Information --")
-            .Append("\nLast Runtime: ").Append(Runtime.LastRunTimeMs)
-            .Append("\nAverage Runtime: ").Append(avgRtStr)
-            .Append("\nMax Runtime: ").Append(profiler.MaxRuntimeMsFast);
+            .Append("\nLast: " + Runtime.LastRunTimeMs)
+            .Append("\nAverage: " + avgRtStr)
+            .Append("\nMax: " + profiler.MaxRuntimeMsFast);
 
             Echo(pbOut.ToString());
 
