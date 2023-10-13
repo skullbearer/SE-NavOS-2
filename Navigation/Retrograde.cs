@@ -31,17 +31,17 @@ namespace IngameScript
 
             if (shipVelocity.LengthSquared() <= terminateSpeed * terminateSpeed)
             {
-                Terminate(this, $"Speed is less than {terminateSpeed:0.#} m/s");
+                Terminate($"Speed is less than {terminateSpeed:0.#} m/s");
             }
         }
 
-        protected void Terminate(ICruiseController source, string reason)
+        public void Terminate(string reason)
         {
             ResetGyroOverride();
-            CruiseTerminated.Invoke(source, reason);
+            CruiseTerminated.Invoke(this, reason);
         }
 
-        public virtual void Abort() => Terminate(this, $"Aborted");
-        protected override void OnNoFunctionalGyrosLeft() => Terminate(this, "No functional gyros found");
+        public virtual void Abort() => Terminate($"Aborted");
+        protected override void OnNoFunctionalGyrosLeft() => Terminate("No functional gyros found");
     }
 }

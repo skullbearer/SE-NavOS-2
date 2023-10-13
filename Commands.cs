@@ -97,7 +97,7 @@ namespace IngameScript
             {
                 optionalInfo = "";
                 string failReason;
-                if (args[1] == "init")
+                if (args[1] == "load")
                     cmdAction = InitJourney;
                 else if (cruiseController is Journey && !((Journey)cruiseController).HandleJourneyCommand(args, argument, out failReason))
                     optionalInfo = failReason;

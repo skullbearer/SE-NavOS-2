@@ -1,6 +1,6 @@
 ﻿NavOS v2.14 brought to you by StarCpt
 
-Config (In the customdata of the pb):
+Config (In the customdata of the pb - Must recompile when modified!!):
 # PersistStateData: DO NOT TOUCH
 
 # MaxThrustOverrideRatio: Amount of forward thrust to use. 0 = 0%, 0.5 = 50%, 1 = 100%
@@ -23,6 +23,16 @@ You need to set this to equal to or more than the actual 180 turn time. It deter
 This field is not calculated automatically, run CalibrateTurn to calculate this field. Recalibration is required whenever the mass of the ship changes significantly.
 
 # MaintainDesiredSpeed: Keeps the ship oriented to the target during cruise and maintains the desired speed if possible (resists RTS friction) until deceleration time.
+
+# [Journey Start] and [Journey End]
+This is where journey data is input. Waypoint Format: <DesiredSpeed> <StopAtWaypoint> <GPS>
+Example:
+[Journey Start]
+200 true GPS:StarCpt #2:-17787:48220:-29137:
+550 false GPS:StarCpt #3:-17933:48686:-29105:#FF75C9F1:
+150 true GPS:StarCpt #4:-17995:48270:-29421:#FF75C9F1:
+[Journey End]
+Note: The ship will be brought to a stop at the last waypoint regardless of the StopAtWaypoint flag
 
 Commands:
 # Cruise <DesiredSpeed> <ForwardDistanceMeters>
@@ -56,9 +66,6 @@ Orients the ship to point in the direction of the gps with no thruster controls 
 # Abort
 Aborts any ongoing navigation routines. Disables all gyro and thrust overrides and reloads the config. Does not enable dampeners
 
-# Reload
-Reloads the config from PB Custom Data. Must be run whenever the config is edited (recompilation also works)
-
 # ThrustRatio <ratio>
 # MaxThrustOverrideRatio <ratio>
 Sets the MaxThrustOverrideRatio config value. Input a value between 0 and 1. This is an alternative to editing the config.
@@ -71,3 +78,9 @@ Example: Thrust Set 0.5
 
 # CalibrateTurn
 Measure and set the Ship180TurnTimeSeconds variable in the config. Make sure the ship is not moving or rotating when this command is used.
+
+# Journey Load
+Loads the journey setup from config
+
+# Journey Start
+Starts the journey if waypoints are loaded

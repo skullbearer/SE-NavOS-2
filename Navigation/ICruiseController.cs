@@ -22,5 +22,6 @@ namespace IngameScript
         void AppendStatus(StringBuilder strb);
         void Run();
         void Abort();
+        void Terminate(string reason);
     }
 }

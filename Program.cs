@@ -80,8 +80,7 @@ namespace IngameScript
 
         private DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.14-dev2";
-        public static VersionInfo versionInfo = new VersionInfo(2, 14, 0);
+        public const string versionStr = "2.14-dev3";
 
         public Config config;
 
@@ -172,16 +171,16 @@ namespace IngameScript
                     else
                         stateStr = null;
                 }
-                else if (mode == NavModeEnum.Journey)
+                else if (mode == NavModeEnum.Journey && args.Length >= 2)
                 {
-                    List<Journey.Waypoint> sequence;
                     int step;
-                    if (Journey.TryParseWaypoints(config.PersistStateData, Storage, out sequence, out step))
+                    if (int.TryParse(args[1], out step))
                     {
                         NavMode = NavModeEnum.Journey;
                         thrustController.MaxThrustRatio = (float)config.MaxThrustOverrideRatio;
-                        cruiseController = new Journey(aimController, controller, gyros, config.Ship180TurnTimeSeconds * 1.5, thrustController, this, sequence, step);
+                        cruiseController = new Journey(aimController, controller, gyros, config.Ship180TurnTimeSeconds * 1.5, thrustController, this);
                         cruiseController.CruiseTerminated += CruiseTerminated;
+                        ((Journey)cruiseController).InitStep(step);
                     }
                 }
 
@@ -368,11 +367,11 @@ Retroburn
 Match
 Orient <GPS>
 Abort
-Reload (the config)
 ThrustRatio <ratio0to1>
 Thrust Set <ratio>
 CalibrateTurn
-Journey Init
+Journey Load
+Journey Start
 ";
             string avgRtStr = profiler.RunningAverageMs.ToString("0.0000");
 

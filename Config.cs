@@ -16,7 +16,6 @@ namespace IngameScript
         }
 
         public static Config Default { get; } = new Config();
-        public static VersionInfo ConfigVersion { get; } = new VersionInfo(1, 2, 0);
 
         public string PersistStateData { get; set; } = "";
         public double MaxThrustOverrideRatio { get; set; } = 1.0;
@@ -29,12 +28,9 @@ namespace IngameScript
         public double CruiseOffsetSideDist { get; set; } = 0;
         public double Ship180TurnTimeSeconds { get; set; } = 10.0;
         public bool MaintainDesiredSpeed { get; set; } = true;
-        public string[] JourneySetup { get; set; } = new string[0];
+        public List<string> JourneySetup { get; } = new List<string>();
 
-        private Config()
-        {
-
-        }
+        private Config() { }
 
         public static bool TryParse(string str, out Config config)
         {
@@ -142,6 +138,20 @@ namespace IngameScript
                     conf.Ship180TurnTimeSeconds = val;
             }
 
+            List<string> lineList = new List<string>(lines);
+            int journeyStartIndex = lineList.FindIndex(i => i == "[Journey Start]");
+            int journeyEndIndex = lineList.FindIndex(i => i == "[Journey End]");
+            if (journeyStartIndex >= 0 && journeyEndIndex > journeyStartIndex + 1)
+            {
+                for (int i = journeyStartIndex + 1; i < journeyEndIndex; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(lineList[i]))
+                    {
+                        conf.JourneySetup.Add(lineList[i]);
+                    }
+                }
+            }
+
             config = conf;
             return true;
         }
@@ -150,7 +160,7 @@ namespace IngameScript
         {
             StringBuilder strb = new StringBuilder();
 
-            strb.AppendLine($"NavConfig | {Program.versionInfo.ToString(false)} | {ConfigVersion.ToString(false)}");
+            strb.AppendLine($"NavConfig | {Program.versionStr}");
             strb.AppendLine("// Remember to recompile after you change the config!");
             strb.AppendLine($"{nameof(PersistStateData)}={PersistStateData}");
             strb.AppendLine();

@@ -21,7 +21,7 @@ namespace IngameScript
         IVariableThrustController thrustControl;
         Program prog;
 
-        private RetroCruiseControl cruiseControl;
+        private ICruiseController cruiseControl;
         private List<Waypoint> waypoints;
         private bool started = false;
         private int currentStep = 0;
@@ -41,37 +41,35 @@ namespace IngameScript
             this.thrustControl = thrustControl;
             this.prog = program;
 
-            waypoints = new List<Waypoint>();
+            waypoints = ParseJourneySetup();
         }
 
-        public Journey(
-            IAimController aimControl,
-            IMyShipController controller,
-            IList<IMyGyro> gyros,
-            double decelStartMarginSeconds,
-            IVariableThrustController thrustControl,
-            Program program,
-            List<Waypoint> waypoints,
-            int step)
-            : this(aimControl, controller, gyros, decelStartMarginSeconds, thrustControl, program)
+        private List<Waypoint> ParseJourneySetup()
         {
-            this.waypoints = waypoints;
-            InitStep(step);
+            List<Waypoint> waypoints = new List<Waypoint>();
+            List<string> lines = prog.config.JourneySetup;
+            foreach (var line in lines)
+            {
+                Waypoint waypoint;
+                if (TryParseWaypoint(line, out waypoint))
+                {
+                    waypoints.Add(waypoint);
+                }
+            }
+            return waypoints;
         }
 
         public void AppendStatus(StringBuilder strb)
         {
-            strb.Append("\n-- Journey Status --");
-            if (!started)
-                strb.Append("\nRecording Waypoints...\nCommands:\nJourney Add <Speed> <GPS>\nJourney Remove <Num>\nJourney Start\n\nWaypoints:");
-            else
-                strb.Append("\nCurrent Step:").Append(currentStep + 1).Append("\nWaypoints:");
+            strb.Append("\n-- Journey Status --\n");
+            strb.Append(!started ? "Awaiting Start Command..." : ("Current Step:" + (currentStep + 1) + "\nWaypoints:"));
             for (int i = 0; i < waypoints.Count; i++)
             {
                 var step = waypoints[i];
-                strb.Append("\n\n#").Append(i + 1).Append(": ").Append(step.Name)
+                strb.Append("\n\n#" + (i + 1) + ": " + step.Name)
                     .Append($"\nTarget: X:{step.Target.X:0.0} Y:{step.Target.Y:0.0} Z:{step.Target.Z:0.0}")
-                    .Append("\nSpeed: ").Append(step.DesiredSpeed);
+                    .Append("\nSpeed: " + step.DesiredSpeed)
+                    .Append("StopAtWaypoint: " + step.StopAtWaypoint);
             }
             strb.Append('\n');
             if (started)
@@ -94,43 +92,9 @@ namespace IngameScript
 
             //all commands:
             //journey init - handled elsewhere
-            //journey add <speed> <gps>
-            //journey remove <num>
             //journey start
-            //journey pause - abort while preserving the sequence. not added yet
 
-            if (args[1] == "add" && args.Length >= 4)
-            {
-                string name;
-                double speed;
-                Vector3D target;
-                if (!double.TryParse(args[2], out speed) || !Utils.TryParseGps(fullCmdStr, out name, out target))
-                {
-                    failReason = "Invalid arguments";
-                    return false;
-                }
-
-                waypoints.Add(new Waypoint(name, speed, target));
-                return true;
-            }
-            else if (args[1] == "remove" && args.Length >= 3)
-            {
-                int num;
-                if (!int.TryParse(args[2], out num))
-                {
-                    failReason = "Couldn't parse removal number";
-                    return false;
-                }
-                else if (num < 1 || num > waypoints.Count)
-                {
-                    failReason = "Number is out of range";
-                    return false;
-                }
-
-                waypoints.RemoveAt(--num);
-                return true;
-            }
-            else if (args[1] == "start")
+            if (args[1] == "start")
             {
                 if (waypoints.Count == 0)
                 {
@@ -145,8 +109,13 @@ namespace IngameScript
             return false;
         }
             
-        private void InitStep(int index)
+        public void InitStep(int index)
         {
+            if (!waypoints.IsValidIndex(index))
+            {
+                Terminate("Waypoint index is out of range");
+            }
+
             var step = waypoints[index];
             Vector3D targetOffset = Vector3D.Zero;
 
@@ -164,10 +133,17 @@ namespace IngameScript
 
             started = true;
             currentStep = index;
-            cruiseControl = new RetroCruiseControl(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustControl, prog.config)
+            if (step.StopAtWaypoint || index == waypoints.Count - 1)
             {
-                decelStartMarginSeconds = this.decelStartMarginSeconds,
-            };
+                cruiseControl = new RetroCruiseControl(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustControl, prog.config)
+                {
+                    decelStartMarginSeconds = this.decelStartMarginSeconds,
+                };
+            }
+            else
+            {
+                cruiseControl = new Program.OneWayCruise(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustControl);
+            }
             cruiseControl.CruiseTerminated += OnCruiseTerminated;
             SavePersistantData();
         }
@@ -175,18 +151,7 @@ namespace IngameScript
         private void SavePersistantData()
         {
             prog.config.PersistStateData = $"{NavModeEnum.Journey}|{currentStep}";
-            StringBuilder strb = new StringBuilder();
-            for (int i = 0;;)
-            {
-                strb.Append(waypoints[i].ToString());
-                i++;
-                if (i < waypoints.Count)
-                    strb.Append('|');
-                else
-                    break;
-            }
             prog.Me.CustomData = prog.config.ToString();
-            prog.SetStorage(strb.ToString());
         }
 
         public void Run()
@@ -199,6 +164,10 @@ namespace IngameScript
 
         private void OnCruiseTerminated(ICruiseController sender, string reason)
         {
+            if (reason == "JourneyTerminated")
+            {
+                return;
+            }
             if (reason == "No functional gyros found")
             {
                 Terminate(reason);
@@ -225,43 +194,30 @@ namespace IngameScript
 
         public void Terminate(string reason)
         {
-            thrustControl.ResetThrustOverrides();
-            if (cruiseControl != null)
-            {
-                cruiseControl.TurnOnAllThrusters();
-                cruiseControl.ResetGyroOverride();
-                cruiseControl = null;
-            }
+            cruiseControl?.Terminate("JourneyTerminated");
             CruiseTerminated.Invoke(this, reason);
         }
 
-        public static bool TryParseWaypoints(string persistData, string storage, out List<Waypoint> waypoints, out int step)
+        //format: <speed> <stopAtWaypoint: true/false> <gps>
+        public static bool TryParseWaypoint(string line, out Waypoint waypoint)
         {
-            waypoints = null;
-            step = 0;
-            try
+            string[] args = line.Split(' ');
+            if (args.Length < 3)
             {
-                step = int.Parse(persistData.Split('|')[1]);
-                string[] steps = storage.Split('|');
-                if (steps.Length == 0 || step < 0 || step > steps.Length - 1)
-                    return false;
-                var instructions = new List<Waypoint>();
-                for (int i = 0; i < steps.Length; i++)
-                {
-                    string[] args = steps[i].Split('/');
-                    Vector3D target;
-                    double speed;
-                    if (!double.TryParse(args[1], out speed) || !Vector3D.TryParse(args[2], out target))
-                        return false;
-                    instructions.Add(new Waypoint(args[0], speed, target));
-                }
-                waypoints = instructions;
-                return true;
-            }
-            catch
-            {
+                waypoint = default(Waypoint);
                 return false;
             }
+            double speed;
+            bool stopAtWaypoint;
+            string targetName;
+            Vector3D target;
+            if (double.TryParse(args[0], out speed) && bool.TryParse(args[1], out stopAtWaypoint) && Utils.TryParseGps(line, out targetName, out target))
+            {
+                waypoint = new Waypoint(targetName, speed, target, stopAtWaypoint);
+                return true;
+            }
+            waypoint = default(Waypoint);
+            return false;
         }
 
         public struct Waypoint
@@ -269,15 +225,15 @@ namespace IngameScript
             public string Name;
             public double DesiredSpeed;
             public Vector3D Target;
+            public bool StopAtWaypoint;
 
-            public Waypoint(string name, double desiredSpeed, Vector3D target)
+            public Waypoint(string name, double desiredSpeed, Vector3D target, bool stopAtWaypoint)
             {
                 Name = name;
                 DesiredSpeed = desiredSpeed;
                 Target = target;
+                StopAtWaypoint = stopAtWaypoint;
             }
-
-            public override string ToString() => $"{Name}/{DesiredSpeed}/{Target}";
         }
     }
 }

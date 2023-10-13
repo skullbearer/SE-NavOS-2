@@ -182,10 +182,11 @@ namespace IngameScript
             }
         }
 
-        public void Abort()
+        public void Abort() => Terminate("Aborted");
+        public void Terminate(string reason)
         {
             thrustController.ResetThrustOverrides();
-            CruiseTerminated.Invoke(this, "Aborted");
+            CruiseTerminated.Invoke(this, reason);
         }
     }
 }

@@ -64,7 +64,7 @@ namespace IngameScript
             {
                 thrustController.ResetThrustOverrides();
                 ShipController.DampenersOverride = true;
-                Terminate(this, $"Speed is less than {DAMPENER_TOLERANCE} m/s");
+                Terminate($"Speed is less than {DAMPENER_TOLERANCE} m/s");
             }
         }
     }

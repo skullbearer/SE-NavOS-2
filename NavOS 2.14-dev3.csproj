@@ -41,6 +41,7 @@
     <Compile Include="Config.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="CoreSystemsPbApi.cs" />
+    <Compile Include="Navigation\OneWayCruise.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Navigation\CalibrateTurnTime.cs" />
     <Compile Include="Navigation\IThrustController.cs" />
@@ -69,7 +70,6 @@
     <AdditionalFiles Include="MDK\whitelist.cache" />
     <Compile Include="Navigation\Retrograde.cs" />
     <Compile Include="Navigation\SpeedMatch.cs" />
-    <Compile Include="VersionInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

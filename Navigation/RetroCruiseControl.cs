@@ -242,7 +242,7 @@ namespace IngameScript
 
             if (Stage == RetroCruiseStage.None)
             {
-                noSpeedOnStart = mySpeed <= completionShipSpeed;
+                noSpeedOnStart = mySpeed <= maxInitialPerpendicularVelocity;
 
                 Vector3D perpVel = Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection);
                 if (perpVel.LengthSquared() > maxInitialPerpendicularVelocity * maxInitialPerpendicularVelocity)
@@ -251,41 +251,38 @@ namespace IngameScript
                     Stage = RetroCruiseStage.OrientAndAccelerate;
             }
 
-            while (true)
+            Repeat:
+
+            if (Stage == RetroCruiseStage.CancelPerpendicularVelocity)
             {
-                if (Stage == RetroCruiseStage.CancelPerpendicularVelocity)
+                CancelPerpendicularVelocity();
+            }
+
+            if (Stage == RetroCruiseStage.OrientAndAccelerate)
+            {
+                OrientAndAccelerate(mySpeed);
+            }
+
+            if (Stage == RetroCruiseStage.OrientAndDecelerate)
+            {
+                if (counter30 && timeToStartDecel * 0.9 > decelStartMarginSeconds && mySpeed < DesiredSpeed * 0.5)
                 {
-                    CancelPerpendicularVelocity();
+                    Stage = RetroCruiseStage.OrientAndAccelerate;
+                    goto Repeat;
                 }
 
-                if (Stage == RetroCruiseStage.OrientAndAccelerate)
-                {
-                    OrientAndAccelerate(mySpeed);
-                }
+                OrientAndDecelerate(mySpeed);
+            }
 
-                if (Stage == RetroCruiseStage.OrientAndDecelerate)
-                {
-                    if (counter30 && timeToStartDecel * 0.9 > decelStartMarginSeconds && mySpeed < DesiredSpeed * 0.5)
-                    {
-                        Stage = RetroCruiseStage.OrientAndAccelerate;
-                        continue;
-                    }
+            if (Stage == RetroCruiseStage.DecelerateNoOrient)
+            {
+                DecelerateNoOrient(mySpeed);
+            }
 
-                    OrientAndDecelerate(mySpeed);
-                }
-
-                if (Stage == RetroCruiseStage.DecelerateNoOrient)
-                {
-                    DecelerateNoOrient(mySpeed);
-                }
-
-                if (Stage == RetroCruiseStage.Complete)
-                {
-                    estimatedTimeOfArrival = 0;
-                    Complete();
-                }
-
-                break;
+            if (Stage == RetroCruiseStage.Complete)
+            {
+                estimatedTimeOfArrival = 0;
+                Complete();
             }
 
             if (counter10)
@@ -437,7 +434,7 @@ namespace IngameScript
         private void OrientAndAccelerate(double mySpeed)
         {
             bool approaching = Vector3D.Dot(targetDirection, myVelocity) > 0;
-            if (!noSpeedOnStart && approaching && timeToStartDecel <= decelStartMarginSeconds && mySpeed > 0.5)
+            if (!noSpeedOnStart && approaching && timeToStartDecel <= decelStartMarginSeconds && mySpeed > maxInitialPerpendicularVelocity)
             {
                 Stage = RetroCruiseStage.OrientAndDecelerate;
                 return;
