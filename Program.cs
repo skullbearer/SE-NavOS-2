@@ -397,7 +397,8 @@ Journey Start
                 nameof(config.ConsoleLcdName) + "=" + config.ConsoleLcdName + "\n" +
                 nameof(config.CruiseOffsetDist) + "=" + config.CruiseOffsetDist.ToString() + "\n" +
                 nameof(config.CruiseOffsetSideDist) + "=" + config.CruiseOffsetSideDist.ToString() + "\n" +
-                nameof(config.Ship180TurnTimeSeconds) + "=" + config.Ship180TurnTimeSeconds.ToString() + "\n");
+                nameof(config.Ship180TurnTimeSeconds) + "=" + config.Ship180TurnTimeSeconds.ToString() + "\n" +
+                nameof(config.MaintainDesiredSpeed) + "=" + config.MaintainDesiredSpeed.ToString() + "\n");
 
             consoleLcd?.WriteText(pbOut);
 

@@ -24,8 +24,9 @@ This field is not calculated automatically, run CalibrateTurn to calculate this 
 
 # MaintainDesiredSpeed: Keeps the ship oriented to the target during cruise and maintains the desired speed if possible (resists RTS friction) until deceleration time.
 
-# [Journey Start] and [Journey End]
+# [Journey Start] and [Journey End] (Experimental!)
 This is where journey data is input. Waypoint Format: <DesiredSpeed> <StopAtWaypoint> <GPS>
+StopAtWaypoint: Whether to stop at the destination or pass thru the point at speed
 Example:
 [Journey Start]
 200 true GPS:StarCpt #2:-17787:48220:-29137:
@@ -79,8 +80,8 @@ Example: Thrust Set 0.5
 # CalibrateTurn
 Measure and set the Ship180TurnTimeSeconds variable in the config. Make sure the ship is not moving or rotating when this command is used.
 
-# Journey Load
+# Journey Load (Experimental!)
 Loads the journey setup from config
 
-# Journey Start
+# Journey Start (Experimental!)
 Starts the journey if waypoints are loaded
