@@ -87,6 +87,7 @@ namespace IngameScript
         private RetroCruiseStage _stage;
         private int counter = -1;
         private bool counter10 = false;
+        private bool counter30 = false;
 
         //updated every 30 ticks
         private float gridMass;
@@ -156,7 +157,7 @@ namespace IngameScript
                     strb.Append("Decelerate ").AppendTime(actualStopTime).Append("\nStop");
                     break;
                 case RetroCruiseStage.DecelerateNoOrient:
-                    strb.Append($">{stage1}>> Accelerate 0:00\n>> Cruise 0:00\n>> Decelerate 0:00\n> Stop").AppendTime(actualStopTime);
+                    strb.Append($">{stage1}>> Accelerate 0:00\n>> Cruise 0:00\n>> Decelerate 0:00\n> Stop ").AppendTime(actualStopTime);
                     break;
             }
 
@@ -193,7 +194,7 @@ namespace IngameScript
         {
             counter++;
             counter10 = counter % 10 == 0;
-            bool counter30 = counter % 30 == 0;
+            counter30 = counter % 30 == 0;
             bool counter60 = counter % 60 == 0;
 
             if (Stage == RetroCruiseStage.None)
@@ -480,13 +481,18 @@ namespace IngameScript
                     thrustRatio = MaxThrustRatio;
                 }
 
-                foreach (var thruster in thrustController.Thrusters[Direction.Forward])
-                {
-                    thruster.Item1.ThrustOverridePercentage = thrustRatio;
-                }
+                var foreThrusts = thrustController.Thrusters[Direction.Forward];
+                for (int i = 0; i < foreThrusts.Length; i++)
+                    foreThrusts[i].Item1.ThrustOverridePercentage = thrustRatio;
 
                 lastThrustRatio = thrustRatio;
 
+                if (counter30)
+                {
+                    var backThrusts = thrustController.Thrusters[Direction.Backward];
+                    for (int i = 0; i < backThrusts.Length; i++)
+                        backThrusts[i].Item1.ThrustOverride = 0;
+                }
                 DampenSideways(myVelocity * 0.1);
                 return;
             }
@@ -529,22 +535,32 @@ namespace IngameScript
                     return;
                 }
 
-                float overrideAmount = MathHelper.Clamp(((float)-timeToStartDecel + MaxThrustRatio), 0f, MaxThrustRatio);
+                float overrideAmount = MathHelper.Clamp((float)-timeToStartDecel + MaxThrustRatio, 0f, MaxThrustRatio);
 
                 decelerating = overrideAmount > 0;
 
-                foreach (var thruster in thrustController.Thrusters[Direction.Forward])
+                var foreThrusts = thrustController.Thrusters[Direction.Forward];
+                for (int i = 0; i < foreThrusts.Length; i++)
+                    foreThrusts[i].Item1.ThrustOverridePercentage = overrideAmount;
+
+                if (counter10)
                 {
-                    thruster.Item1.ThrustOverridePercentage = overrideAmount;
+                    DampenSideways(myVelocity * 0.1);
                 }
 
-                DampenSideways(myVelocity);
+                if (counter30)
+                {
+                    var backThrusts = thrustController.Thrusters[Direction.Backward];
+                    for (int i = 0; i < backThrusts.Length; i++)
+                        backThrusts[i].Item1.ThrustOverride = 0;
+                }
+
                 return;
             }
 
             if (timeToStartDecel > 0)
             {
-                ResetThrustOverridesExceptBack();
+                thrustController.ResetThrustOverrides();
                 return;
             }
 
