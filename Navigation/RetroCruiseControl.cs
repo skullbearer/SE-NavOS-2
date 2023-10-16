@@ -493,7 +493,7 @@ namespace IngameScript
                     for (int i = 0; i < backThrusts.Length; i++)
                         backThrusts[i].Item1.ThrustOverride = 0;
                 }
-                DampenSideways(myVelocity * 0.1);
+                DampenSideways(myVelocity);
                 return;
             }
 
@@ -545,7 +545,7 @@ namespace IngameScript
 
                 if (counter10)
                 {
-                    DampenSideways(myVelocity * 0.1);
+                    DampenSideways(myVelocity);
                 }
 
                 if (counter30)
