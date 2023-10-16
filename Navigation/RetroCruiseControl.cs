@@ -81,6 +81,7 @@ namespace IngameScript
         public double stopTimeAndDistanceMulti = 1.05;
 
         private IVariableThrustController thrustController;
+        private Program program;
         private Config config;
 
         //active variables
@@ -105,6 +106,7 @@ namespace IngameScript
         private float lastThrustRatio;
         private Vector3D myVelocity, targetDirection, gravityAtPos;
         private bool noSpeedOnStart;
+        private RetroCruiseStage initialStage = RetroCruiseStage.None;
 
         public RetroCruiseControl(
             Vector3D target,
@@ -113,18 +115,40 @@ namespace IngameScript
             IMyShipController controller,
             IList<IMyGyro> gyros,
             IVariableThrustController thrustController,
-            Config config)
+            Program program)
             : base(aimControl, controller, gyros)
         {
             this.Target = target;
             this.DesiredSpeed = desiredSpeed;
             this.thrustController = thrustController;
-            this.config = config;
+            this.program = program;
+            this.config = program.config;
             
             Stage = RetroCruiseStage.None;
             gridMass = controller.CalculateShipMass().PhysicalMass;
 
             UpdateForwardThrustAndAccel();
+        }
+
+        public RetroCruiseControl(
+            Vector3D target,
+            double desiredSpeed,
+            IAimController aimControl,
+            IMyShipController controller,
+            IList<IMyGyro> gyros,
+            IVariableThrustController thrustController,
+            Program program,
+            RetroCruiseStage stage)
+            : this(
+                  target,
+                  desiredSpeed,
+                  aimControl,
+                  controller,
+                  gyros,
+                  thrustController,
+                  program)
+        {
+            initialStage = stage;
         }
 
         public void AppendStatus(StringBuilder strb)
@@ -243,13 +267,20 @@ namespace IngameScript
 
             if (Stage == RetroCruiseStage.None)
             {
-                noSpeedOnStart = mySpeed <= maxInitialPerpendicularVelocity;
-
-                Vector3D perpVel = Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection);
-                if (perpVel.LengthSquared() > maxInitialPerpendicularVelocity * maxInitialPerpendicularVelocity)
-                    Stage = RetroCruiseStage.CancelPerpendicularVelocity;
+                if (initialStage != RetroCruiseStage.None)
+                {
+                    Stage = initialStage;
+                }
                 else
-                    Stage = RetroCruiseStage.OrientAndAccelerate;
+                {
+                    noSpeedOnStart = mySpeed <= maxInitialPerpendicularVelocity;
+
+                    Vector3D perpVel = Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection);
+                    if (perpVel.LengthSquared() > maxInitialPerpendicularVelocity * maxInitialPerpendicularVelocity)
+                        Stage = RetroCruiseStage.CancelPerpendicularVelocity;
+                    else
+                        Stage = RetroCruiseStage.OrientAndAccelerate;
+                }
             }
 
             Repeat:
@@ -390,6 +421,8 @@ namespace IngameScript
             SetDampenerState(false);
             lastAimDirectionAngleRad = null;
             decelerating = false;
+            config.PersistStateData = $"{NavModeEnum.Cruise}|{DesiredSpeed}|{Stage}";
+            program.Me.CustomData = config.ToString();
         }
 
         private void CancelPerpendicularVelocity()
@@ -493,7 +526,7 @@ namespace IngameScript
                     for (int i = 0; i < backThrusts.Length; i++)
                         backThrusts[i].Item1.ThrustOverride = 0;
                 }
-                DampenSideways(myVelocity);
+                DampenSideways(myVelocity * 0.2);
                 return;
             }
 
@@ -545,7 +578,7 @@ namespace IngameScript
 
                 if (counter10)
                 {
-                    DampenSideways(myVelocity);
+                    DampenSideways(myVelocity * 0.2);
                 }
 
                 if (counter30)
