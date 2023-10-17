@@ -185,15 +185,14 @@ namespace IngameScript
                     break;
             }
 
-            strb.Append("\n\nETA: ").AppendTime(estimatedTimeOfArrival);
+            //if (vmax != 0)
+            //    strb.Append("\nMax Speed: ").Append(vmax.ToString("0.00"));
 
-            if (vmax != 0)
-                strb.Append("\nMax Speed: ").Append(vmax.ToString("0.00"));
-
-            strb.Append("\nStoppingDistance: ").Append(currentStopDist.ToString("0.0"))
-            .Append("\nTargetDistance: ").Append(distanceToTarget.ToString("0.0"))
-            .Append("\nDesired Speed: ").Append(DesiredSpeed.ToString("0.##"))
-            .Append("\nAim Error: ").Append(((lastAimDirectionAngleRad ?? 0) * RadToDegMulti).ToString("0.000\n"));
+            strb.Append("\n\nETA: ").AppendTime(estimatedTimeOfArrival)
+            .Append("\nEst. Stop Dist.: " + currentStopDist.ToString("0.0"))
+            .Append("\nDestination Dist.: " + distanceToTarget.ToString("0.0"))
+            .Append("\nDesired Speed: " + DesiredSpeed.ToString("0.##"))
+            .Append("\nAim Error: " + (lastAimDirectionAngleRad * RadToDegMulti ?? 0).ToString("0.000\n"));
         }
 
         private void DampenAllDirections(Vector3D shipVelocity, float tolerance = DAMPENER_TOLERANCE)
@@ -212,6 +211,13 @@ namespace IngameScript
             float up = thrustAmount.Y < tolerance ? -thrustAmount.Y : 0;
             float down = thrustAmount.Y > tolerance ? thrustAmount.Y : 0;
             thrustController.SetSideThrusts(left, right, up, down);
+        }
+
+        private void ResetBackThrusts()
+        {
+            var backThrusts = thrustController.Thrusters[Direction.Backward];
+            for (int i = 0; i < backThrusts.Length; i++)
+                backThrusts[i].Item1.ThrustOverride = 0;
         }
 
         public void Run()
@@ -261,7 +267,7 @@ namespace IngameScript
             //stopDist = stopTime * (mySpeed * 0.5);
             currentStopDist = (mySpeed * mySpeed) / (2 * forwardAccelPremultiplied) * stopTimeAndDistanceMulti;
 
-            timeToStartDecel = ((distanceToTarget - currentStopDist) / mySpeed) + TICK;
+            timeToStartDecel = ((distanceToTarget - currentStopDist) / mySpeed) - TICK * 10;
 
             double currentAndDesiredSpeedDelta = Math.Abs(DesiredSpeed - mySpeed);
 
@@ -297,7 +303,7 @@ namespace IngameScript
 
             if (Stage == RetroCruiseStage.OrientAndDecelerate)
             {
-                if (counter10 && timeToStartDecel > decelStartMarginSeconds && mySpeed < DesiredSpeed * 0.75)
+                if (counter10 && timeToStartDecel > decelStartMarginSeconds && mySpeed < vmax * 0.75)
                 {
                     Stage = RetroCruiseStage.OrientAndAccelerate;
                     goto Repeat;
@@ -522,10 +528,9 @@ namespace IngameScript
 
                 if (counter30)
                 {
-                    var backThrusts = thrustController.Thrusters[Direction.Backward];
-                    for (int i = 0; i < backThrusts.Length; i++)
-                        backThrusts[i].Item1.ThrustOverride = 0;
+                    ResetBackThrusts();
                 }
+
                 DampenSideways(myVelocity * 0.2);
                 return;
             }
@@ -555,6 +560,11 @@ namespace IngameScript
 
             Orient(orientForward);
 
+            if (!counter10)
+            {
+                return;
+            }
+
             if (!lastAimDirectionAngleRad.HasValue)
             {
                 lastAimDirectionAngleRad = AngleRadiansBetweenVectorAndControllerForward(orientForward);
@@ -576,16 +586,11 @@ namespace IngameScript
                 for (int i = 0; i < foreThrusts.Length; i++)
                     foreThrusts[i].Item1.ThrustOverridePercentage = overrideAmount;
 
-                if (counter10)
-                {
-                    DampenSideways(myVelocity * 0.2);
-                }
+                DampenSideways(myVelocity * 0.2);
 
                 if (counter30)
                 {
-                    var backThrusts = thrustController.Thrusters[Direction.Backward];
-                    for (int i = 0; i < backThrusts.Length; i++)
-                        backThrusts[i].Item1.ThrustOverride = 0;
+                    ResetBackThrusts();
                 }
 
                 return;

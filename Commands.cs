@@ -223,7 +223,7 @@ namespace IngameScript
             }
         }
 
-        private void InitRetroCruise(Vector3D target, double speed, RetroCruiseControl.RetroCruiseStage stage = RetroCruiseControl.RetroCruiseStage.None)
+        private void InitRetroCruise(Vector3D target, double speed, RetroCruiseControl.RetroCruiseStage stage = RetroCruiseControl.RetroCruiseStage.None, bool saveConfig = true)
         {
             NavMode = NavModeEnum.Cruise;
             thrustController.MaxThrustRatio = (float)config.MaxThrustOverrideRatio;
@@ -234,7 +234,10 @@ namespace IngameScript
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.Cruise}|{speed}|{stage}";
             Storage = target.ToString();
-            SaveConfig();
+            if (saveConfig)
+            {
+                SaveConfig();
+            }
         }
 
         private void CommandRetrograde()

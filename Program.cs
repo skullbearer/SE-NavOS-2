@@ -22,7 +22,7 @@ namespace IngameScript
 {
     public enum NavModeEnum //legacy: all future modes should be a class derived from ICruiseController
     {
-        None = 0,
+        Idle = 0,
         Cruise = 1,
         Retrograde = 2,
         Prograde = 3,
@@ -50,10 +50,11 @@ namespace IngameScript
 
         //lcd for logging
         const string debugLcdName = "debugLcd";
+        const double throttleRt = 0.1;
         #endregion mdk preserve
 
         public NavModeEnum NavMode { get; set; }
-        public bool IsNavIdle => NavMode == NavModeEnum.None;
+        public bool IsNavIdle => NavMode == NavModeEnum.Idle;
 
         private Dictionary<Direction, List<IMyThrust>> thrusters = new Dictionary<Direction, List<IMyThrust>>
         {
@@ -70,6 +71,7 @@ namespace IngameScript
         private static StringBuilder debug;
         private IMyTextSurface debugLcd;
         private IMyTextSurface consoleLcd;
+        private int counter = -1;
 
         private IAimController aimController;
         private Profiler profiler;
@@ -80,15 +82,16 @@ namespace IngameScript
 
         private DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.14.3";
+        public const string versionStr = "2.14.4-dev";
 
         public Config config;
 
         public Program()
         {
-            LoadConfig();
+            LoadConfig(false);
+            UpdateBlocks();
 
-            Runtime.UpdateFrequency = UpdateFrequency.Update1 | UpdateFrequency.Update10;
+            Runtime.UpdateFrequency = UpdateFrequency.Update1;
             bootTime = DateTime.UtcNow;
 
             aimController = new JitAim(Me.CubeGrid.GridSizeEnum);
@@ -99,7 +102,6 @@ namespace IngameScript
             try { wcApiActive = wcApi.Activate(Me); }
             catch { wcApiActive = false; }
 
-            UpdateBlocks();
             thrustController.UpdateThrusts();
             //AbortNav(false);
 
@@ -114,7 +116,7 @@ namespace IngameScript
             string[] args = config.PersistStateData.Split('|');
             NavModeEnum mode;
             
-            if (args.Length == 0 || !Enum.TryParse<NavModeEnum>(args[0], out mode) || mode == NavModeEnum.None)
+            if (args.Length == 0 || !Enum.TryParse<NavModeEnum>(args[0], out mode) || mode == NavModeEnum.Idle)
                 return;
 
             AbortNav(false);
@@ -129,7 +131,7 @@ namespace IngameScript
                     RetroCruiseControl.RetroCruiseStage stage = RetroCruiseControl.RetroCruiseStage.None;
                     if (double.TryParse(args[1], out desiredSpeed) && Vector3D.TryParse(Storage, out target) && (args.Length < 2 || Enum.TryParse(args[2], out stage)))
                     {
-                        InitRetroCruise(target, desiredSpeed, stage);
+                        InitRetroCruise(target, desiredSpeed, stage, false);
                         stateStr = mode + " " + desiredSpeed;
                     }
                     else
@@ -204,18 +206,23 @@ namespace IngameScript
             UpdateBlocks();
         }
 
-        private void LoadConfig()
+        private void LoadConfig(bool saveConfig = true)
         {
             if (!Config.TryParse(Me.CustomData, out config))
             {
                 config = Config.Default;
             }
-            SaveConfig();
+
+            if (saveConfig)
+            {
+                SaveConfig();
+            }
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
             profiler.Run();
+            counter++;
 
             if (argument.Length > 0)
             {
@@ -229,7 +236,7 @@ namespace IngameScript
                 cruiseController.Run();
             }
 
-            if ((updateSource & UpdateType.Update10) != 0)
+            if (counter % (profiler.RunningAverageMs > throttleRt ? 64 : 16) == 0)
             {
                 WritePbOutput();
             }
@@ -254,7 +261,7 @@ namespace IngameScript
         private void CruiseTerminated(ICruiseController source, string reason)
         {
             cruiseController = null;
-            NavMode = NavModeEnum.None;
+            NavMode = NavModeEnum.Idle;
 
             optionalInfo = $"{source.Name} Terminated.\nReason: {reason}";
 
@@ -379,7 +386,7 @@ Journey Start
             pbOut.Append(programInfoStr).Append(avgRtStr);
             TimeSpan upTime = DateTime.UtcNow - bootTime;
             pbOut.Append("\nUptime: ").Append(SecondsToDuration(upTime.TotalSeconds));
-            pbOut.Append("\nNavMode: ").AppendLine(NavMode.ToString());
+            pbOut.Append("\nMode: ").AppendLine(NavMode.ToString());
 
             if (optionalInfo.Length > 0)
             {
