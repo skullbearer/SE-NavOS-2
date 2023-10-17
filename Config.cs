@@ -152,6 +152,13 @@ namespace IngameScript
                 }
             }
 
+            if (confValues.TryGetValue(nameof(MaintainDesiredSpeed), out result))
+            {
+                bool val;
+                if (bool.TryParse(result, out val))
+                    conf.MaintainDesiredSpeed = val;
+            }
+
             config = conf;
             return true;
         }

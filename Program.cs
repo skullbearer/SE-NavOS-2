@@ -82,14 +82,13 @@ namespace IngameScript
 
         private DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.14.4-dev";
+        public const string versionStr = "2.14.4-dev3";
 
         public Config config;
 
         public Program()
         {
-            LoadConfig(false);
-            UpdateBlocks();
+            LoadConfig(true);
 
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
             bootTime = DateTime.UtcNow;
@@ -236,7 +235,7 @@ namespace IngameScript
                 cruiseController.Run();
             }
 
-            if (counter % (profiler.RunningAverageMs > throttleRt ? 64 : 16) == 0)
+            if (counter % (profiler.RunningAverageMs > throttleRt ? 60 : 10) == 0)
             {
                 WritePbOutput();
             }
