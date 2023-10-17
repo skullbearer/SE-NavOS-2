@@ -145,7 +145,7 @@ namespace IngameScript
             {
                 for (int i = journeyStartIndex + 1; i < journeyEndIndex; i++)
                 {
-                    if (!string.IsNullOrWhiteSpace(lineList[i]))
+                    if (!String.IsNullOrWhiteSpace(lineList[i]) && !lines[i].StartsWith("//"))
                     {
                         conf.JourneySetup.Add(lineList[i]);
                     }
@@ -197,6 +197,7 @@ namespace IngameScript
             strb.AppendLine("// Keeps the ship oriented to the target and maintain speed until decel time");
             strb.AppendLine($"{nameof(MaintainDesiredSpeed)}={MaintainDesiredSpeed}");
             strb.AppendLine();
+            strb.AppendLine("// Format: <speed> <stopAtWaypoint> <GPS>");
             strb.AppendLine("[Journey Start]");
             foreach (var line in JourneySetup)
                 strb.AppendLine(line);
