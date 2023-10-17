@@ -88,7 +88,8 @@ namespace IngameScript
 
         public Program()
         {
-            LoadConfig(true);
+            LoadConfig(false);
+            UpdateBlocks();
 
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
             bootTime = DateTime.UtcNow;
@@ -194,28 +195,27 @@ namespace IngameScript
             catch (Exception e)
             {
                 config.PersistStateData = "";
-                SaveConfig();
+                SaveConfig(false);
                 optionalInfo = e.ToString();
             }
         }
 
-        private void SaveConfig()
+        private void SaveConfig(bool updateblocks = true)
         {
             Me.CustomData = config.ToString();
-            UpdateBlocks();
+            if (updateblocks)
+            {
+                UpdateBlocks();
+            }
         }
 
-        private void LoadConfig(bool saveConfig = true)
+        private void LoadConfig(bool updateBlocks)
         {
             if (!Config.TryParse(Me.CustomData, out config))
             {
                 config = Config.Default;
             }
-
-            if (saveConfig)
-            {
-                SaveConfig();
-            }
+            SaveConfig(updateBlocks);
         }
 
         public void Main(string argument, UpdateType updateSource)
@@ -265,7 +265,7 @@ namespace IngameScript
             optionalInfo = $"{source.Name} Terminated.\nReason: {reason}";
 
             config.PersistStateData = "";
-            SaveConfig();
+            LoadConfig(false);
         }
 
         private void DisableThrustOverrides()

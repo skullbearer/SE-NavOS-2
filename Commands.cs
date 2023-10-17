@@ -35,7 +35,7 @@ namespace IngameScript
             if (args[0].Equals("reload"))
             {
                 AbortNav(false);
-                LoadConfig();
+                LoadConfig(true);
                 return;
             }
             else if (args[0].Equals("maxthrustoverrideratio") || args[0].Equals("thrustratio"))
