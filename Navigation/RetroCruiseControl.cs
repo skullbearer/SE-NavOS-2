@@ -381,7 +381,7 @@ namespace IngameScript
 
         private void UpdateForwardThrustAndAccel()
         {
-            float forwardThrust = thrustController.Thrusters[Direction.Forward].Where(t => t.Item1.IsWorking).Sum(t => t.Item1.MaxEffectiveThrust);
+            float forwardThrust = thrustController.Thrusters[Direction.Forward].Where(t => t.IsWorking).Sum(t => t.MaxEffectiveThrust);
             forwardThrustInv = 1f / forwardThrust;
             forwardAccel = forwardThrust / gridMass;
             forwardAccelPremultiplied = forwardAccel * MaxThrustRatio;
@@ -390,22 +390,22 @@ namespace IngameScript
         private void ResetThrustOverridesExceptFront()
         {
             foreach (var thruster in thrustController.Thrusters[Direction.Backward])
-                thruster.Item1.ThrustOverride = 0;
+                thruster.ThrustOverride = 0;
             thrustController.SetSideThrusts(0, 0, 0, 0);
         }
 
         private void ResetBackThrusts()
         {
             var backThrusts = thrustController.Thrusters[Direction.Backward];
-            for (int i = 0; i < backThrusts.Length; i++)
-                backThrusts[i].Item1.ThrustOverride = 0;
+            for (int i = 0; i < backThrusts.Count; i++)
+                backThrusts[i].ThrustOverride = 0;
         }
 
         public void TurnOnAllThrusters()
         {
             foreach (var kv in thrustController.Thrusters)
-                for (int i = 0; i < kv.Value.Length; i++)
-                    kv.Value[i].Item1.Enabled = true;
+                for (int i = 0; i < kv.Value.Count; i++)
+                    kv.Value[i].Enabled = true;
         }
 
         private void SetDampenerState(bool enabled) => ShipController.DampenersOverride = enabled;
@@ -444,14 +444,14 @@ namespace IngameScript
                 float overrideAmount = MathHelper.Clamp(((float)perpSpeed * 2 * gridMass) * forwardThrustInv, 0, MaxThrustRatio);
                 foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                 {
-                    thruster.Item1.ThrustOverridePercentage = overrideAmount;
+                    thruster.ThrustOverridePercentage = overrideAmount;
                 }
             }
             else
             {
                 foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                 {
-                    thruster.Item1.ThrustOverride = 0;
+                    thruster.ThrustOverride = 0;
                 }
             }
 
@@ -511,8 +511,8 @@ namespace IngameScript
                 }
 
                 var foreThrusts = thrustController.Thrusters[Direction.Forward];
-                for (int i = 0; i < foreThrusts.Length; i++)
-                    foreThrusts[i].Item1.ThrustOverridePercentage = thrustRatio;
+                for (int i = 0; i < foreThrusts.Count; i++)
+                    foreThrusts[i].ThrustOverridePercentage = thrustRatio;
 
                 lastThrustRatio = thrustRatio;
 
@@ -575,8 +575,8 @@ namespace IngameScript
                 decelerating = overrideAmount > 0;
 
                 var foreThrusts = thrustController.Thrusters[Direction.Forward];
-                for (int i = 0; i < foreThrusts.Length; i++)
-                    foreThrusts[i].Item1.ThrustOverridePercentage = overrideAmount;
+                for (int i = 0; i < foreThrusts.Count; i++)
+                    foreThrusts[i].ThrustOverridePercentage = overrideAmount;
 
                 DampenSidewaysToZero(-(targetDirection - myVelocity - myVelocity));
 
@@ -628,7 +628,7 @@ namespace IngameScript
 
             foreach (var thruster in thrustController.Thrusters[Direction.Forward])
             {
-                thruster.Item1.ThrustOverridePercentage = overrideAmount;
+                thruster.ThrustOverridePercentage = overrideAmount;
             }
 
             DampenSidewaysToZero(myVelocity);

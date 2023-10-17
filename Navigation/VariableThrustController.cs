@@ -25,7 +25,7 @@ namespace IngameScript
             }
         }
 
-        public Dictionary<Direction, MyTuple<IMyThrust, float>[]> Thrusters { get; }
+        public Dictionary<Direction, IList<IMyThrust>> Thrusters { get; }
 
         private float _maxThrustOverrideRatio = 1f;
         private IMyShipController shipController;
@@ -42,9 +42,7 @@ namespace IngameScript
         {
             this.Thrusters = thrusters.ToDictionary(
                 kv => kv.Key,
-                kv => thrusters[kv.Key]
-                    .Select(thrust => new MyTuple<IMyThrust, float>(thrust, thrust.MaxEffectiveThrust * MaxThrustRatio))
-                    .ToArray());
+                kv => (IList<IMyThrust>)thrusters[kv.Key].ToArray());
             this.shipController = shipController;
         }
 
@@ -53,12 +51,9 @@ namespace IngameScript
             foreach (var kv in Thrusters)
             {
                 float total = 0;
-                for (int i = 0; i < kv.Value.Length; i++)
+                for (int i = 0; i < kv.Value.Count; i++)
                 {
-                    var val = kv.Value[i];
-                    val.Item2 = val.Item1.MaxEffectiveThrust * MaxThrustRatio;
-                    kv.Value[i] = val;
-                    total += val.Item1.MaxEffectiveThrust;
+                    total += kv.Value[i].MaxEffectiveThrust;
                 }
                 total = 1.0f / total;
                 switch (kv.Key)
@@ -94,8 +89,8 @@ namespace IngameScript
             backward *= backThrustInv;
             forward = Math.Min(forward * forwardThrustInv, MaxThrustRatio);
 
-            foreach (var thrust in Thrusters[Direction.Forward]) thrust.Item1.ThrustOverridePercentage = forward;
-            foreach (var thrust in Thrusters[Direction.Backward]) thrust.Item1.ThrustOverridePercentage = backward;
+            foreach (var thrust in Thrusters[Direction.Forward]) thrust.ThrustOverridePercentage = forward;
+            foreach (var thrust in Thrusters[Direction.Backward]) thrust.ThrustOverridePercentage = backward;
         }
 
         public void SetSideThrusts(float left, float right, float up, float down)
@@ -105,17 +100,17 @@ namespace IngameScript
             up *= upThrustInv;
             down *= downThrustInv;
 
-            foreach (var thrust in Thrusters[Direction.Left]) thrust.Item1.ThrustOverridePercentage = left;
-            foreach (var thrust in Thrusters[Direction.Right]) thrust.Item1.ThrustOverridePercentage = right;
-            foreach (var thrust in Thrusters[Direction.Up]) thrust.Item1.ThrustOverridePercentage = up;
-            foreach (var thrust in Thrusters[Direction.Down]) thrust.Item1.ThrustOverridePercentage = down;
+            foreach (var thrust in Thrusters[Direction.Left]) thrust.ThrustOverridePercentage = left;
+            foreach (var thrust in Thrusters[Direction.Right]) thrust.ThrustOverridePercentage = right;
+            foreach (var thrust in Thrusters[Direction.Up]) thrust.ThrustOverridePercentage = up;
+            foreach (var thrust in Thrusters[Direction.Down]) thrust.ThrustOverridePercentage = down;
         }
 
         public void ResetThrustOverrides()
         {
             foreach (var kv in Thrusters)
-                for (int i = 0; i < kv.Value.Length; i++)
-                    kv.Value[i].Item1.ThrustOverride = 0;
+                for (int i = 0; i < kv.Value.Count; i++)
+                    kv.Value[i].ThrustOverride = 0;
         }
     }
 }
