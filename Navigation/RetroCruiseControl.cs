@@ -542,7 +542,7 @@ namespace IngameScript
 
             if (!approaching)
             {
-                decelNoOrientAimDir = ShipController.WorldMatrix.Forward;
+                decelNoOrientAimDir = -myVelocity;
                 Stage = RetroCruiseStage.DecelerateNoOrient;
                 return;
             }
@@ -565,35 +565,35 @@ namespace IngameScript
             {
                 if (distanceToTarget < forwardAccelPremultiplied)
                 {
-                    decelNoOrientAimDir = ShipController.WorldMatrix.Forward;
+                    decelNoOrientAimDir = -myVelocity;
                     Stage = RetroCruiseStage.DecelerateNoOrient;
                     return;
                 }
-
+            
                 float overrideAmount = MathHelper.Clamp((float)-timeToStartDecel + MaxThrustRatio, 0f, MaxThrustRatio);
-
+            
                 decelerating = overrideAmount > 0;
-
+            
                 var foreThrusts = thrustController.Thrusters[Direction.Forward];
                 for (int i = 0; i < foreThrusts.Count; i++)
                     foreThrusts[i].ThrustOverridePercentage = overrideAmount;
-
+            
                 DampenSidewaysToZero(-(targetDirection - myVelocity - myVelocity));
-
+            
                 if (counter30)
                 {
                     ResetBackThrusts();
                 }
-
+            
                 return;
             }
-
+            
             if (timeToStartDecel > 0)
             {
                 thrustController.ResetThrustOverrides();
                 return;
             }
-
+            
             DampenAllDirections(myVelocity * 0.2);
         }
 
@@ -601,6 +601,8 @@ namespace IngameScript
 
         private void DecelerateNoOrient(double mySpeed)
         {
+            decelerating = true;
+
             if (mySpeed <= completionShipSpeed)
             {
                 Stage = RetroCruiseStage.Complete;
@@ -615,23 +617,21 @@ namespace IngameScript
             }
 
             bool approaching = Vector3D.Dot(targetDirection, myVelocity) > 0;
-
+            
             if (!approaching)
             {
                 DampenAllDirections(myVelocity, 0);
                 return;
             }
 
-            float overrideAmount = Math.Min(((float)-timeToStartDecel + MaxThrustRatio), MaxThrustRatio);
-
-            decelerating = overrideAmount > 0;
-
-            foreach (var thruster in thrustController.Thrusters[Direction.Forward])
-            {
-                thruster.ThrustOverridePercentage = overrideAmount;
-            }
-
-            DampenSidewaysToZero(myVelocity);
+            //float overrideAmount = Math.Min(((float)-timeToStartDecel + MaxThrustRatio), MaxThrustRatio);
+            //
+            //var foreThrusts = thrustController.Thrusters[Direction.Forward];
+            //for (int i = 0; i < foreThrusts.Count; i++)
+            //    foreThrusts[i].ThrustOverridePercentage = overrideAmount;
+            //
+            //DampenSidewaysToZero(-(targetDirection - myVelocity - myVelocity));
+            DampenAllDirections(-(targetDirection - myVelocity - myVelocity));
         }
 
         private double AngleRadiansBetweenVectorAndControllerForward(Vector3D vec)
