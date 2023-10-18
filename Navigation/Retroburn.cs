@@ -16,8 +16,6 @@ namespace IngameScript
 
         public override string Name => nameof(Retroburn);
 
-        public int runInterval = 10;
-
         private IVariableThrustController thrustController;
         private float gridMass;
         private int counter = -1;
@@ -49,13 +47,13 @@ namespace IngameScript
             else
                 ResetGyroOverride();
 
-            if (counter % runInterval == 0)
+            if (counter % 10 == 0)
             {
                 ShipController.DampenersOverride = false;
                 Vector3D shipVelocityNormalized = shipVelocity.SafeNormalize();
 
                 if (Vector3D.Dot(-shipVelocityNormalized, ShipController.WorldMatrix.Forward) > 0.999999)
-                    thrustController.DampenAllDirections(shipVelocity / runInterval, gridMass, DAMPENER_TOLERANCE);
+                    thrustController.DampenAllDirections(shipVelocity, gridMass, DAMPENER_TOLERANCE);
                 else
                     thrustController.ResetThrustOverrides();
             }

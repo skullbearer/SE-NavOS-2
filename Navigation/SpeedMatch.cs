@@ -169,8 +169,7 @@ namespace IngameScript
             {
                 relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
                 Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
-                Vector3 thrustAmount = -relativeVelocityLocal * 2 * gridMass;
-                thrustAmount *= 0.5f / thrustInterval;
+                Vector3 thrustAmount = -relativeVelocityLocal * /*2 * */ gridMass;
 
                 Vector3 input = ShipController.MoveIndicator;
                 thrustAmount = new Vector3D(

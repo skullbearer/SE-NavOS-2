@@ -98,7 +98,7 @@ namespace IngameScript
 
         private DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.14.5";
+        public const string versionStr = "2.14.6";
 
         public Config config;
 
@@ -297,10 +297,7 @@ namespace IngameScript
 
         private void NavModeChanged(NavModeEnum old, NavModeEnum now)
         {
-            if (IsNavIdle)
-            {
-                idleCounter = 0;
-            }
+            idleCounter = 0;
 
             if (IsNavSleep)
             {
