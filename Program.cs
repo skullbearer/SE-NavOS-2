@@ -22,6 +22,7 @@ namespace IngameScript
 {
     public enum NavModeEnum //legacy: all future modes should be a class derived from ICruiseController
     {
+        Sleep = -1,
         Idle = 0,
         Cruise = 1,
         Retrograde = 2,
@@ -53,8 +54,22 @@ namespace IngameScript
         const double throttleRt = 0.1;
         #endregion mdk preserve
 
-        public NavModeEnum NavMode { get; set; }
+        public NavModeEnum NavMode
+        {
+            get { return _navMode; }
+            set
+            {
+                if (_navMode != value)
+                {
+                    var old = _navMode;
+                    _navMode = value;
+                    NavModeChanged(old, value);
+                }
+            }
+        }
+        private NavModeEnum _navMode = NavModeEnum.Idle;
         public bool IsNavIdle => NavMode == NavModeEnum.Idle;
+        public bool IsNavSleep => NavMode == NavModeEnum.Sleep;
 
         private Dictionary<Direction, List<IMyThrust>> thrusters = new Dictionary<Direction, List<IMyThrust>>
         {
@@ -72,6 +87,7 @@ namespace IngameScript
         private IMyTextSurface debugLcd;
         private IMyTextSurface consoleLcd;
         private int counter = -1;
+        private int idleCounter = 0;
 
         private IAimController aimController;
         private Profiler profiler;
@@ -230,12 +246,21 @@ namespace IngameScript
 
             debugLcd?.WriteText(debug.ToString());
 
-            if (!IsNavIdle && cruiseController != null)
+            if (IsNavIdle)
+            {
+                idleCounter++;
+            }
+            else if (cruiseController != null)
             {
                 cruiseController.Run();
             }
 
-            if (counter % (profiler.RunningAverageMs > throttleRt ? 60 : 10) == 0)
+            if (idleCounter >= 600)
+            {
+                NavMode = NavModeEnum.Sleep;
+            }
+
+            if (IsNavSleep || counter % (profiler.RunningAverageMs > throttleRt ? 60 : 10) == 0)
             {
                 WritePbOutput();
             }
@@ -259,13 +284,34 @@ namespace IngameScript
 
         private void CruiseTerminated(ICruiseController source, string reason)
         {
-            cruiseController = null;
-            NavMode = NavModeEnum.Idle;
-
             optionalInfo = $"{source.Name} Terminated.\nReason: {reason}";
 
-            config.PersistStateData = "";
+            cruiseController = null;
+
             LoadConfig(false);
+            config.PersistStateData = "";
+            SaveConfig();
+
+            NavMode = NavModeEnum.Idle;
+        }
+
+        private void NavModeChanged(NavModeEnum old, NavModeEnum now)
+        {
+            if (IsNavIdle)
+            {
+                idleCounter = 0;
+            }
+
+            if (IsNavSleep)
+            {
+                Runtime.UpdateFrequency = UpdateFrequency.None;
+                optionalInfo = "Sleeping...";
+            }
+            else if (old == NavModeEnum.Sleep)
+            {
+                Runtime.UpdateFrequency = UpdateFrequency.Update1;
+                optionalInfo = "";
+            }
         }
 
         private void DisableThrustOverrides()
