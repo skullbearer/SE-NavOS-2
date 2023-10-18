@@ -71,7 +71,7 @@ namespace IngameScript
         public void DampenAllDirections(Vector3D shipVelocity, float gridMass, float tolerance)
         {
             Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(shipController.WorldMatrix));
-            Vector3 thrustAmount = localVelocity * 2 * gridMass;
+            Vector3 thrustAmount = localVelocity * gridMass;
             SetThrusts(thrustAmount, tolerance);
         }
 

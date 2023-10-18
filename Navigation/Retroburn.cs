@@ -53,7 +53,7 @@ namespace IngameScript
                 Vector3D shipVelocityNormalized = shipVelocity.SafeNormalize();
 
                 if (Vector3D.Dot(-shipVelocityNormalized, ShipController.WorldMatrix.Forward) > 0.999999 || velocitySq <= terminateSpeed * terminateSpeed)
-                    thrustController.DampenAllDirections(shipVelocity, gridMass, 0);
+                    thrustController.DampenAllDirections(shipVelocity * 5, gridMass, 0);
                 else
                     thrustController.ResetThrustOverrides();
             }

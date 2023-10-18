@@ -26,7 +26,6 @@ namespace IngameScript
         public IMyShipController ShipController { get; set; }
 
         public double relativeSpeedThreshold = 0.01;//stop dampening under this relative speed
-        public int thrustInterval = 2;
 
         private long targetEntityId;
         private WcPbApi wcApi;
@@ -165,11 +164,11 @@ namespace IngameScript
                 gridMass = ShipController.CalculateShipMass().PhysicalMass;
             }
 
-            if (target.HasValue && counter % thrustInterval == 0)
+            if (target.HasValue && counter % 5 == 0)
             {
                 relativeVelocity = target.Value.Velocity - ShipController.GetShipVelocities().LinearVelocity;
                 Vector3 relativeVelocityLocal = Vector3D.TransformNormal(relativeVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
-                Vector3 thrustAmount = -relativeVelocityLocal * /*2 * */ gridMass;
+                Vector3 thrustAmount = -relativeVelocityLocal * 10 * gridMass;
 
                 Vector3 input = ShipController.MoveIndicator;
                 thrustAmount = new Vector3D(

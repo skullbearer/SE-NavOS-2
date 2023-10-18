@@ -73,7 +73,7 @@ namespace IngameScript
         /// <summary>
         /// aim/orient tolerance in radians
         /// </summary>
-        public double OrientToleranceAngleRadians { get; set; } = 0.075 * DegToRadMulti;
+        public double OrientToleranceAngleRadians { get; set; } = 0.100 * DegToRadMulti;
 
         public double maxInitialPerpendicularVelocity = 1;
 
@@ -181,7 +181,7 @@ namespace IngameScript
                     strb.Append("Decelerate ").AppendTime(actualStopTime).Append("\nStop");
                     break;
                 case RetroCruiseStage.DecelerateNoOrient:
-                    strb.Append($">{stage1}>> Accelerate 0:00\n>> Cruise 0:00\n>> Decelerate 0:00\n> Stop ").AppendTime(actualStopTime);
+                    strb.Append($">{stage1}>> Accelerate 0:00\n>> Cruise 0:00\n>> Decelerate 0:00\n> Stop");
                     break;
             }
 
@@ -441,6 +441,11 @@ namespace IngameScript
 
             Orient(aimDirection);
 
+            if (!counter10)
+            {
+                return;
+            }
+
             if (!lastAimDirectionAngleRad.HasValue)
             {
                 lastAimDirectionAngleRad = AngleRadiansBetweenVectorAndControllerForward(aimDirection);
@@ -448,7 +453,7 @@ namespace IngameScript
 
             if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
             {
-                float overrideAmount = MathHelper.Clamp(((float)perpSpeed * 2 * gridMass) * forwardThrustInv, 0, MaxThrustRatio);
+                float overrideAmount = MathHelper.Clamp(((float)perpSpeed * 5 * gridMass) * forwardThrustInv, 0, MaxThrustRatio);
                 foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                 {
                     thruster.ThrustOverridePercentage = overrideAmount;
@@ -528,7 +533,9 @@ namespace IngameScript
                     ResetBackThrusts();
                 }
 
-                DampenSidewaysToZero(myVelocity);
+                //DampenSidewaysToZero(myVelocity * 5);
+                Vector3D perp = -Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection);
+                DampenSidewaysToZero(-perp * 5);
 
                 return;
             }
@@ -585,9 +592,11 @@ namespace IngameScript
                 var foreThrusts = thrustController.Thrusters[Direction.Forward];
                 for (int i = 0; i < foreThrusts.Count; i++)
                     foreThrusts[i].ThrustOverridePercentage = overrideAmount;
-            
-                DampenSidewaysToZero(myVelocity);
-            
+
+                //DampenSidewaysToZero(myVelocity * 5);
+                Vector3D perp = -Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection);
+                DampenSidewaysToZero(-perp * 5);
+
                 if (counter30)
                 {
                     ResetBackThrusts();
@@ -602,7 +611,7 @@ namespace IngameScript
                 return;
             }
             
-            DampenAllDirections(myVelocity * 0.2);
+            DampenAllDirections(myVelocity * 5);
         }
 
         private Vector3D decelNoOrientAimDir;
@@ -626,7 +635,7 @@ namespace IngameScript
             
             if (!approaching)
             {
-                DampenAllDirections(myVelocity, 0);
+                DampenAllDirections(myVelocity * 50, 0);
                 return;
             }
 
