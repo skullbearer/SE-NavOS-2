@@ -157,7 +157,7 @@ namespace IngameScript
 
             if (timeToStartDecel < 0 || Vector3D.Dot(myVelocity, targetDirection) < 0)
             {
-                strb.Append($"!! Overshoot Warning !! ({(currentStopDist - distanceToTarget).ToString("0")})\n\n");
+                strb.Append($"!! Overshoot Warning !! ({GetShortDistance(currentStopDist - distanceToTarget)})\n\n");
             }
 
             const string stage1 = "> Cancel Perpendicular Speed\n";
@@ -186,10 +186,18 @@ namespace IngameScript
             }
 
             strb.Append("\n\nETA: ").AppendTime(estimatedTimeOfArrival)
-            .Append("\nEst. Stop Dist.: " + currentStopDist.ToString("0.0"))
-            .Append("\nDestination Dist.: " + distanceToTarget.ToString("0.0"))
-            .Append("\nDesired Speed: " + DesiredSpeed.ToString("0.##"))
+            .Append("\nEst. Stop Dist.: " + GetShortDistance(currentStopDist))
+            .Append("\nDestination Dist.: " + GetShortDistance(distanceToTarget))
+            .Append("\nDesired Speed: " + DesiredSpeed.ToString("0.## m/s"))
             .Append("\nAim Error: " + (lastAimDirectionAngleRad * RadToDegMulti ?? 0).ToString("0.000\n"));
+        }
+
+        public static string GetShortDistance(double meters)
+        {
+            if (meters >= 1000)
+                return (meters / 1000).ToString("0.## km");
+            else
+                return meters.ToString("0 m");
         }
 
         private void DampenAllDirections(Vector3D shipVelocity, float tolerance = DAMPENER_TOLERANCE)
