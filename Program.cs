@@ -82,7 +82,7 @@ namespace IngameScript
 
         private DateTime bootTime;
         public const string programName = "NavOS";
-        public const string versionStr = "2.14.4";
+        public const string versionStr = "2.14.5";
 
         public Config config;
 
@@ -129,7 +129,7 @@ namespace IngameScript
                     double desiredSpeed;
                     Vector3D target;
                     RetroCruiseControl.RetroCruiseStage stage = RetroCruiseControl.RetroCruiseStage.None;
-                    if (double.TryParse(args[1], out desiredSpeed) && Vector3D.TryParse(Storage, out target) && (args.Length < 2 || Enum.TryParse(args[2], out stage)))
+                    if (double.TryParse(args[1], out desiredSpeed) && Vector3D.TryParse(Storage, out target) && (args.Length < 3 || Enum.TryParse(args[2], out stage)))
                     {
                         InitRetroCruise(target, desiredSpeed, stage, false);
                         stateStr = mode + " " + desiredSpeed;

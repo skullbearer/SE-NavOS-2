@@ -389,8 +389,7 @@ namespace IngameScript
 
         private void ResetThrustOverridesExceptFront()
         {
-            foreach (var thruster in thrustController.Thrusters[Direction.Backward])
-                thruster.ThrustOverride = 0;
+            ResetBackThrusts();
             thrustController.SetSideThrusts(0, 0, 0, 0);
         }
 
@@ -521,7 +520,8 @@ namespace IngameScript
                     ResetBackThrusts();
                 }
 
-                DampenSidewaysToZero(-(targetDirection - myVelocity - myVelocity));
+                DampenSidewaysToZero(myVelocity);
+
                 return;
             }
 
@@ -578,7 +578,7 @@ namespace IngameScript
                 for (int i = 0; i < foreThrusts.Count; i++)
                     foreThrusts[i].ThrustOverridePercentage = overrideAmount;
             
-                DampenSidewaysToZero(-(targetDirection - myVelocity - myVelocity));
+                DampenSidewaysToZero(myVelocity);
             
                 if (counter30)
                 {
@@ -601,8 +601,6 @@ namespace IngameScript
 
         private void DecelerateNoOrient(double mySpeed)
         {
-            decelerating = true;
-
             if (mySpeed <= completionShipSpeed)
             {
                 Stage = RetroCruiseStage.Complete;
@@ -631,6 +629,7 @@ namespace IngameScript
             //    foreThrusts[i].ThrustOverridePercentage = overrideAmount;
             //
             //DampenSidewaysToZero(-(targetDirection - myVelocity - myVelocity));
+
             DampenAllDirections(-(targetDirection - myVelocity - myVelocity));
         }
 
