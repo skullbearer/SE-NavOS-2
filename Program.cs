@@ -211,7 +211,7 @@ namespace IngameScript
                     {
                         NavMode = NavModeEnum.Journey;
                         thrustController.MaxThrustRatio = (float)config.MaxThrustOverrideRatio;
-                        cruiseController = new Journey(aimController, controller, gyros, config.Ship180TurnTimeSeconds * 1.5, thrustController, this);
+                        cruiseController = new Journey(aimController, controller, gyros, config.Ship180TurnTimeSeconds * 1.5, thrustController, otherThrustController, config.DeactivateForwardThrustInCruise, this);
                         cruiseController.CruiseTerminated += CruiseTerminated;
                         ((Journey)cruiseController).InitStep(step);
                     }

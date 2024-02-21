@@ -29,6 +29,8 @@ namespace IngameScript
         public double Ship180TurnTimeSeconds { get; set; } = 10.0;
         public bool MaintainDesiredSpeed { get; set; } = true;
         public List<string> JourneySetup { get; } = new List<string>();
+        public bool DeactivateForwardThrustInCruise { get; set; } = true;
+        public bool RequireDampenersForSpeedMatch { get; set; } = true;
 
         private Config() { }
 

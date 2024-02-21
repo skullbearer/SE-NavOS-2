@@ -121,8 +121,8 @@ namespace IngameScript
         }
 
         public void OnOffThrust(Direction dir = Direction.Forward, bool on = true)
-        {
-            foreach (var thrust in Thrusters[Direction.Forward]) if (on) thrust.ApplyAction("OfOff_On"); else thrust.ApplyAction("OnOff_Off");
+        {// To avoid an occasional bug, where turning on or off the thruster fails when override is not zero, zero the override first.
+            foreach (var thrust in Thrusters[Direction.Forward]) if (on) { thrust.ThrustOverride = 0f; thrust.Enabled = true;} else { thrust.ThrustOverride = 0f; thrust.Enabled = false;}
         }
 
     }

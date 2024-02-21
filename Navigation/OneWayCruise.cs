@@ -66,6 +66,9 @@ namespace IngameScript
             public double maxInitialPerpendicularVelocity = 0.5;
 
             private IVariableThrustController thrustController;
+            private IVariableThrustController otherThrustController;
+
+            private bool DeactivateForwardThrustInCruise;
 
             //active variables
             private OneWayCruiseStage _stage;
@@ -95,17 +98,22 @@ namespace IngameScript
                 IAimController aimControl,
                 IMyShipController controller,
                 IList<IMyGyro> gyros,
-                IVariableThrustController thrustController)
+                IVariableThrustController thrustController,
+                IVariableThrustController otherThrustController,
+                bool DeactivateForwardThrustInCruise)
                 : base(aimControl, controller, gyros)
             {
                 this.Target = target;
                 this.DesiredSpeed = desiredSpeed;
                 this.thrustController = thrustController;
+                this.otherThrustController = otherThrustController;
+                this.DeactivateForwardThrustInCruise = DeactivateForwardThrustInCruise;
 
                 Stage = OneWayCruiseStage.None;
                 gridMass = controller.CalculateShipMass().PhysicalMass;
 
                 UpdateForwardThrustAndAccel();
+                this.otherThrustController = otherThrustController;
             }
 
             public void AppendStatus(StringBuilder strb)
@@ -149,14 +157,15 @@ namespace IngameScript
                 {
                     ResetGyroOverride();
                     thrustController.ResetThrustOverrides();
-                    TurnOnAllThrusters();
+                    TurnOnAllThrusters(thrustController);
+                    if(DeactivateForwardThrustInCruise) thrustController.OnOffThrust(Direction.Forward, false); //Turn off forward thrusters.
+                    TurnOnAllThrusters(otherThrustController, false);
                     thrustController.UpdateThrusts();
                 }
 
                 if (counter10)
                 {
                     lastAimDirectionAngleRad = null;
-
                     SetDampenerState(false);
                 }
                 if (counter30)
@@ -239,18 +248,22 @@ namespace IngameScript
                 forwardAccelPremultiplied = forwardAccel * MaxThrustRatio;
             }
 
-            private void ResetThrustOverridesExceptBack()
+            private void ResetThrustOverridesExceptBack(IVariableThrustController _thrustController)
             {
                 foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                     thruster.ThrustOverride = 0;
-                thrustController.SetSideThrusts(0, 0, 0, 0);
+
+                foreach (var kv in _thrustController.Thrusters)
+                    for (int i = 0; i < kv.Value.Count; i++)
+                        if (kv.Key != Direction.Backward)
+                            kv.Value[i].ThrustOverride = 0f;
             }
 
-            public void TurnOnAllThrusters()
+            public void TurnOnAllThrusters(IVariableThrustController _thrustController,  bool on = true)
             {
-                foreach (var kv in thrustController.Thrusters)
+                foreach (var kv in _thrustController.Thrusters)
                     for (int i = 0; i < kv.Value.Count; i++)
-                        kv.Value[i].Enabled = true;
+                    { kv.Value[i].ThrustOverride = 0f; kv.Value[i].Enabled = on; } //Zeroing the override first avoids a rare bug where thruster will not toggle and/or override remains stuck.
             }
 
             private void SetDampenerState(bool enabled) => ShipController.DampenersOverride = enabled;
@@ -259,7 +272,7 @@ namespace IngameScript
             {
                 thrustController.ResetThrustOverrides();
                 ResetGyroOverride();
-                SetDampenerState(false);
+                //SetDampenerState(false); //This is only required if we are not handling thrusters in dampening, which we now are. -Skullbearer
                 lastAimDirectionAngleRad = null;
             }
 
@@ -299,7 +312,7 @@ namespace IngameScript
 
                 if (counter10)
                 {
-                    ResetThrustOverridesExceptBack();
+                    ResetThrustOverridesExceptBack(thrustController);
                 }
             }
 
@@ -352,7 +365,7 @@ namespace IngameScript
                     return;
                 }
 
-                ResetThrustOverridesExceptBack();
+                ResetThrustOverridesExceptBack(thrustController);
             }
 
             private double AngleRadiansBetweenVectorAndControllerForward(Vector3D vec)
@@ -367,8 +380,9 @@ namespace IngameScript
 
             public void Terminate(string reason)
             {
-                thrustController.ResetThrustOverrides();
-                TurnOnAllThrusters();
+                //thrustController.ResetThrustOverrides(); //Overrides are now reset in TurnOnAllThrusters to avoid a rare bug
+                TurnOnAllThrusters(thrustController);
+                TurnOnAllThrusters(otherThrustController);
 
                 ResetGyroOverride();
 

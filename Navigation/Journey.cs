@@ -18,7 +18,9 @@ namespace IngameScript
         IAimController aimControl;
         IList<IMyGyro> gyros;
         double decelStartMarginSeconds;
-        IVariableThrustController thrustControl;
+        IVariableThrustController thrustController;
+        IVariableThrustController otherThrustController;
+        private bool DeactivateForwardThrustInCruise;
         Program prog;
 
         private ICruiseController cruiseControl;
@@ -31,14 +33,18 @@ namespace IngameScript
             IMyShipController controller,
             IList<IMyGyro> gyros,
             double decelStartMarginSeconds,
-            IVariableThrustController thrustControl,
+            IVariableThrustController thrustController,
+            IVariableThrustController otherThrustController,
+            bool DeactivateForwardThrustInCruise,
             Program program)
         {
             this.aimControl = aimControl;
             this.shipController = controller;
             this.gyros = gyros;
             this.decelStartMarginSeconds = decelStartMarginSeconds;
-            this.thrustControl = thrustControl;
+            this.thrustController = thrustController;
+            this.otherThrustController = otherThrustController;
+            this.DeactivateForwardThrustInCruise = DeactivateForwardThrustInCruise;
             this.prog = program;
 
             waypoints = ParseJourneySetup();
@@ -135,14 +141,14 @@ namespace IngameScript
             currentStep = index;
             if (step.StopAtWaypoint || index == waypoints.Count - 1)
             {
-                cruiseControl = new RetroCruiseControl(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustControl, prog)
+                cruiseControl = new RetroCruiseControl(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustController, prog)
                 {
                     decelStartMarginSeconds = this.decelStartMarginSeconds,
                 };
             }
             else
             {
-                cruiseControl = new Program.OneWayCruise(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustControl);
+                cruiseControl = new Program.OneWayCruise(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustController, otherThrustController, DeactivateForwardThrustInCruise);
             }
             cruiseControl.CruiseTerminated += OnCruiseTerminated;
             SavePersistantData();

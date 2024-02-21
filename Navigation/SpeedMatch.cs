@@ -38,6 +38,7 @@ namespace IngameScript
         private List<MyDetectedEntityInfo> obstructions = new List<MyDetectedEntityInfo>();
         private Vector3D relativeVelocity;
         private float gridMass;
+        private bool requireDamp;
 
         private MyDetectedEntityInfo? target;
         private TargetAcquisitionMode targetInfoMode;
@@ -48,7 +49,8 @@ namespace IngameScript
             IMyShipController shipController,
             IMyTerminalBlock programmableBlock,
             IVariableThrustController thrustController,
-            IVariableThrustController otherThrustController)
+            IVariableThrustController otherThrustController,
+            bool requireDamp)
         {
             this.targetEntityId = targetEntityId;
             this.wcApi = wcApi;
@@ -56,6 +58,7 @@ namespace IngameScript
             this.pb = programmableBlock;
             this.thrustController = thrustController;
             this.otherThrustController = otherThrustController;
+            this.requireDamp = requireDamp;
             this.gridMass = ShipController.CalculateShipMass().PhysicalMass;
         }
 
@@ -153,12 +156,17 @@ namespace IngameScript
 
                 target = null;
 
-                if (!TryGetTarget(out target, counter30) || ShipController.DampenersOverride == false)
+                if (!TryGetTarget(out target, counter30))
                 {
-                    thrustController.ResetThrustOverrides();
-                    otherThrustController.ResetThrustOverrides();
-                    return;
+                    if ((requireDamp && ShipController.DampenersOverride) || !requireDamp)
+                    {
+                        if (!requireDamp && ShipController.DampenersOverride) ShipController.DampenersOverride = false;
+                        thrustController.ResetThrustOverrides();
+                        otherThrustController.ResetThrustOverrides();
+                        return;
+                    }
                 }
+
 
                 thrustController.UpdateThrusts();
                 otherThrustController.UpdateThrusts();

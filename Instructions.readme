@@ -35,6 +35,12 @@ Example:
 [Journey End]
 Note: The ship will be brought to a stop at the last waypoint regardless of the StopAtWaypoint flag
 
+# DeactivateForwardThrustInCruise: If true, the script will attempt to turn off any thrusters in the forward direction to avoid wasting fuel. If off, they will act normally under manual control or dampeners.
+
+# RequireDampenersForSpeedMatch: If true, the SpeedMatch mode will only try to match speed with the target while dampeners are on. 
+This behaves like a relative dampener lock would normally, but at the distance of your weapon targeting range. 
+If off, it will force your dampeners off when SpeedMatch engages, which is the legacy behavior.
+
 Commands:
 # Cruise <DesiredSpeed> <ForwardDistanceMeters>
 Automatically travels the set distance in the forward direction of the ship controller (cockpit) at the desired speed.

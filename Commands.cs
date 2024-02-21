@@ -338,7 +338,7 @@ namespace IngameScript
         {
             NavMode = NavModeEnum.SpeedMatch;
             thrustController.MaxThrustRatio = config.IgnoreMaxThrustForSpeedMatch ? 1f : (float)config.MaxThrustOverrideRatio;
-            cruiseController = new SpeedMatch(targetId, wcApi, controller, Me, thrustController, otherThrustController);
+            cruiseController = new SpeedMatch(targetId, wcApi, controller, Me, thrustController, otherThrustController, config.RequireDampenersForSpeedMatch);
             cruiseController.CruiseTerminated += CruiseTerminated;
             config.PersistStateData = $"{NavModeEnum.SpeedMatch}|{targetId}";
             SaveConfig();
@@ -348,7 +348,7 @@ namespace IngameScript
         {
             NavMode = NavModeEnum.Journey;
             thrustController.MaxThrustRatio = (float)config.MaxThrustOverrideRatio;
-            cruiseController = new Journey(aimController, controller, gyros, config.Ship180TurnTimeSeconds * 1.5, thrustController, this);
+            cruiseController = new Journey(aimController, controller, gyros, config.Ship180TurnTimeSeconds * 1.5, thrustController, otherThrustController, config.DeactivateForwardThrustInCruise, this);
             cruiseController.CruiseTerminated += CruiseTerminated;
         }
     }
