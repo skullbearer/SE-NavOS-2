@@ -132,6 +132,7 @@ namespace IngameScript
             catch { wcApiActive = false; }
 
             thrustController.UpdateThrusts();
+            otherThrustController.UpdateThrusts();
             //AbortNav(false);
 
             TryRestoreNavState();
