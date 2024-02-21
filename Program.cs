@@ -80,6 +80,17 @@ namespace IngameScript
             { Direction.Up, new List<IMyThrust>() },
             { Direction.Down, new List<IMyThrust>() },
         };
+
+        private Dictionary<Direction, List<IMyThrust>> otherThrusters = new Dictionary<Direction, List<IMyThrust>>
+        {
+            { Direction.Forward, new List<IMyThrust>()},
+            { Direction.Backward, new List<IMyThrust>() },
+            { Direction.Right, new List<IMyThrust>() },
+            { Direction.Left, new List<IMyThrust>() },
+            { Direction.Up, new List<IMyThrust>() },
+            { Direction.Down, new List<IMyThrust>() },
+        };
+
         private List<IMyGyro> gyros = new List<IMyGyro>();
         private IMyShipController controller;
 
@@ -131,7 +142,7 @@ namespace IngameScript
 
             string[] args = config.PersistStateData.Split('|');
             NavModeEnum mode;
-            
+
             if (args.Length == 0 || !Enum.TryParse<NavModeEnum>(args[0], out mode) || mode == NavModeEnum.Idle)
                 return;
 
@@ -346,7 +357,9 @@ namespace IngameScript
 
 
             var tempThrusters = new List<IMyThrust>();
+            var tempAllThrusters = new List<IMyThrust>();
             GridTerminalSystem.GetBlockGroupWithName(config.ThrustGroupName)?.GetBlocksOfType(tempThrusters, i => i.CubeGrid == Me.CubeGrid);
+            GridTerminalSystem.GetBlocksOfType(tempAllThrusters, i => i.CubeGrid == Me.CubeGrid);
 
             if (tempThrusters.Count == 0)
                 GridTerminalSystem.GetBlocksOfType(tempThrusters, i => i.CubeGrid == Me.CubeGrid);
@@ -354,16 +367,15 @@ namespace IngameScript
             if (tempThrusters.Count == 0)
                 throw new Exception("bruh, this ship's got no thrusters!!");
 
-            foreach (var thruster in tempThrusters)
+            foreach (var thruster in tempAllThrusters)
             {
                 switch (GetBlockDirection(thruster.WorldMatrix.Forward, controller.WorldMatrix))
                 {
-                    case Direction.Backward: thrusters[Direction.Forward].Add(thruster); break;
-                    case Direction.Forward: thrusters[Direction.Backward].Add(thruster); break;
-                    case Direction.Left: thrusters[Direction.Right].Add(thruster); break;
-                    case Direction.Right: thrusters[Direction.Left].Add(thruster); break;
-                    case Direction.Down: thrusters[Direction.Up].Add(thruster); break;
-                    case Direction.Up: thrusters[Direction.Down].Add(thruster); break;
+                    case Direction.Backward: if (tempThrusters.Contains(thruster)) thrusters[Direction.Forward].Add(thruster); else otherThrusters[Direction.Forward].Add(thruster); break;
+                    case Direction.Forward: if (tempThrusters.Contains(thruster)) thrusters[Direction.Backward].Add(thruster); else otherThrusters[Direction.Backward].Add(thruster); break;
+                    case Direction.Left: if (tempThrusters.Contains(thruster)) thrusters[Direction.Right].Add(thruster); else otherThrusters[Direction.Right].Add(thruster); break;
+                    case Direction.Down: if (tempThrusters.Contains(thruster)) thrusters[Direction.Up].Add(thruster); else otherThrusters[Direction.Up].Add(thruster); break;
+                    case Direction.Up: if (tempThrusters.Contains(thruster)) thrusters[Direction.Down].Add(thruster); else otherThrusters[Direction.Down].Add(thruster); break;
                 }
             }
 
