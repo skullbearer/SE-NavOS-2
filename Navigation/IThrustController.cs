@@ -13,5 +13,7 @@ namespace IngameScript
         void ResetThrustOverrides();
         void SetThrusts(Vector3 thrustAmount, float tolerance);
         void SetSideThrusts(float left, float right, float up, float down);
+        void ThrustOverrideZero();
+        void OnOffThrust(Direction dir = Direction.Forward, bool on = true)
     }
 }

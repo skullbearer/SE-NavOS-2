@@ -32,6 +32,7 @@ namespace IngameScript
         private IMyTerminalBlock pb;
 
         private IVariableThrustController thrustController;
+        private IVariableThrustController otherThrustController;
         private int counter = 0;
         private Dictionary<MyDetectedEntityInfo, float> threats = new Dictionary<MyDetectedEntityInfo, float>();
         private List<MyDetectedEntityInfo> obstructions = new List<MyDetectedEntityInfo>();
@@ -46,13 +47,15 @@ namespace IngameScript
             WcPbApi wcApi,
             IMyShipController shipController,
             IMyTerminalBlock programmableBlock,
-            IVariableThrustController thrustController)
+            IVariableThrustController thrustController
+            IVariableThrustController otherThrustController)
         {
             this.targetEntityId = targetEntityId;
             this.wcApi = wcApi;
             this.ShipController = shipController;
             this.pb = programmableBlock;
             this.thrustController = thrustController;
+            this.otherThrustController = otherThrustController;
             this.gridMass = ShipController.CalculateShipMass().PhysicalMass;
         }
 
@@ -146,17 +149,19 @@ namespace IngameScript
 
             if (counter10)
             {
-                ShipController.DampenersOverride = false;
+                //ShipController.DampenersOverride = false;
 
                 target = null;
 
-                if (!TryGetTarget(out target, counter30))
+                if (!TryGetTarget(out target, counter30) || ShipController.DampenersOverride == false)
                 {
                     thrustController.ResetThrustOverrides();
+                    otherThrustController.ResetThrustOverrides();
                     return;
                 }
 
                 thrustController.UpdateThrusts();
+                otherThrustController.
             }
 
             if (counter30 && counter % 60 == 0)
@@ -177,6 +182,7 @@ namespace IngameScript
                     Math.Abs(input.Z) <= 0.01 ? thrustAmount.Z : 0);
 
                 thrustController.SetThrusts(thrustAmount, 0);
+                otherThrustController.ThrustOverrideZero();
             }
         }
 
