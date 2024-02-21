@@ -115,12 +115,14 @@ namespace IngameScript
 
         public void ThrustOverrideZero()
         {
-            foreach (var thrust in Thrusters) thrust.ThrustOverridePercentage = float.MinValue;
+            foreach (var kv in Thrusters)
+                for (int i = 0; i < kv.Value.Count; i++)
+                    kv.Value[i].ThrustOverride = float.MinValue;
         }
 
         public void OnOffThrust(Direction dir = Direction.Forward, bool on = true)
         {
-            foreach (var thrust in Thrusters[Direction.Forward]) if (on) thrust.ApplyAction("OfOff_On"); else thrust.ApplyAction("OnOff_Off")
+            foreach (var thrust in Thrusters[Direction.Forward]) if (on) thrust.ApplyAction("OfOff_On"); else thrust.ApplyAction("OnOff_Off");
         }
 
     }

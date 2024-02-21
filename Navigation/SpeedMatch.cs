@@ -47,7 +47,7 @@ namespace IngameScript
             WcPbApi wcApi,
             IMyShipController shipController,
             IMyTerminalBlock programmableBlock,
-            IVariableThrustController thrustController
+            IVariableThrustController thrustController,
             IVariableThrustController otherThrustController)
         {
             this.targetEntityId = targetEntityId;
@@ -161,7 +161,7 @@ namespace IngameScript
                 }
 
                 thrustController.UpdateThrusts();
-                otherThrustController.
+                otherThrustController.UpdateThrusts();
             }
 
             if (counter30 && counter % 60 == 0)
