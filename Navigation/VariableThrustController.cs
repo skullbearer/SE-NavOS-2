@@ -75,14 +75,14 @@ namespace IngameScript
             SetThrusts(thrustAmount, tolerance);
         }
 
-        public void SetThrusts(Vector3 thrustAmount, float tolerance)
+        public void SetThrusts(Vector3 thrustAmount, float tolerance, bool stopDamp = false)
         {
-            float backward = thrustAmount.Z < tolerance ? -thrustAmount.Z : 0;
-            float forward = thrustAmount.Z > tolerance ? thrustAmount.Z : 0;
-            float right = thrustAmount.X < tolerance ? -thrustAmount.X : 0;
-            float left = thrustAmount.X > tolerance ? thrustAmount.X : 0;
-            float up = thrustAmount.Y < tolerance ? -thrustAmount.Y : 0;
-            float down = thrustAmount.Y > tolerance ? thrustAmount.Y : 0;
+            float backward = thrustAmount.Z < tolerance ? -thrustAmount.Z : stopDamp ? 0 : float.MinValue;
+            float forward = thrustAmount.Z > tolerance ? thrustAmount.Z : stopDamp ? 0 : float.MinValue;
+            float right = thrustAmount.X < tolerance ? -thrustAmount.X : stopDamp ? 0 : float.MinValue;
+            float left = thrustAmount.X > tolerance ? thrustAmount.X : stopDamp ? 0 : float.MinValue;
+            float up = thrustAmount.Y < tolerance ? -thrustAmount.Y : stopDamp ? 0 : float.MinValue;
+            float down = thrustAmount.Y > tolerance ? thrustAmount.Y : stopDamp ? 0 : float.MinValue;
 
             SetSideThrusts(left, right, up, down);
 
