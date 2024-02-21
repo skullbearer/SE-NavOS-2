@@ -106,6 +106,7 @@ namespace IngameScript
         private bool wcApiActive = false;
         private ICruiseController cruiseController;
         private IVariableThrustController thrustController;
+        private IVariableThrustController otherThrustController;
 
         private DateTime bootTime;
         public const string programName = "NavOS";
@@ -125,6 +126,7 @@ namespace IngameScript
             profiler = new Profiler(this);
             wcApi = new WcPbApi();
             thrustController = new VariableThrustController(thrusters, controller);
+            otherThrustController = new VariableThrustController(otherThrusters, controller);
 
             try { wcApiActive = wcApi.Activate(Me); }
             catch { wcApiActive = false; }

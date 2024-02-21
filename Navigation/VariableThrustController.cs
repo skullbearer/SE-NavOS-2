@@ -112,5 +112,10 @@ namespace IngameScript
                 for (int i = 0; i < kv.Value.Count; i++)
                     kv.Value[i].ThrustOverride = 0;
         }
+
+        public void ThrustOverrideZero()
+        {
+            foreach (var thrust in Thrusters) thrust.ThrustOverridePercentage = float.MinValue;
+        }
     }
 }
