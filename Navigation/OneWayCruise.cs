@@ -113,7 +113,6 @@ namespace IngameScript
                 gridMass = controller.CalculateShipMass().PhysicalMass;
 
                 UpdateForwardThrustAndAccel();
-                this.otherThrustController = otherThrustController;
             }
 
             public void AppendStatus(StringBuilder strb)
@@ -158,7 +157,7 @@ namespace IngameScript
                     ResetGyroOverride();
                     thrustController.ResetThrustOverrides();
                     TurnOnAllThrusters(thrustController);
-                    if(DeactivateForwardThrustInCruise) thrustController.OnOffThrust(Direction.Forward, false); //Turn off forward thrusters.
+                    if(DeactivateForwardThrustInCruise) thrustController.OnOffThrust(Direction.Backward, false); //Turn off reverse thrusters.
                     TurnOnAllThrusters(otherThrustController, false);
                     thrustController.UpdateThrusts();
                 }

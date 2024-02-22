@@ -227,7 +227,7 @@ namespace IngameScript
         {
             NavMode = NavModeEnum.Cruise;
             thrustController.MaxThrustRatio = (float)config.MaxThrustOverrideRatio;
-            cruiseController = new RetroCruiseControl(target, speed, aimController, controller, gyros, thrustController, this, stage)
+            cruiseController = new RetroCruiseControl(target, speed, aimController, controller, gyros, thrustController, otherThrustController, this, stage)
             {
                 decelStartMarginSeconds = config.Ship180TurnTimeSeconds * 1.5,
             };

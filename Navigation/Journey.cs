@@ -141,7 +141,7 @@ namespace IngameScript
             currentStep = index;
             if (step.StopAtWaypoint || index == waypoints.Count - 1)
             {
-                cruiseControl = new RetroCruiseControl(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustController, prog)
+                cruiseControl = new RetroCruiseControl(step.Target + targetOffset, step.DesiredSpeed, aimControl, shipController, gyros, thrustController, otherThrustController, prog)
                 {
                     decelStartMarginSeconds = this.decelStartMarginSeconds,
                 };

@@ -120,9 +120,9 @@ namespace IngameScript
                     kv.Value[i].ThrustOverride = float.MinValue;
         }
 
-        public void OnOffThrust(Direction dir = Direction.Forward, bool on = true)
+        public void OnOffThrust(Direction dir = Direction.Backward, bool on = true)
         {// To avoid an occasional bug, where turning on or off the thruster fails when override is not zero, zero the override first.
-            foreach (var thrust in Thrusters[Direction.Forward]) if (on) { thrust.ThrustOverride = 0f; thrust.Enabled = true;} else { thrust.ThrustOverride = 0f; thrust.Enabled = false;}
+            foreach (var thrust in Thrusters[dir]) if (on) { thrust.ThrustOverride = 0f; thrust.Enabled = true;} else { thrust.ThrustOverride = 0f; thrust.Enabled = false;}
         }
 
     }

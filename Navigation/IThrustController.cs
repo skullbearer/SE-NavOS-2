@@ -14,6 +14,6 @@ namespace IngameScript
         void SetThrusts(Vector3 thrustAmount, float tolerance, bool stopDamp = false);
         void SetSideThrusts(float left, float right, float up, float down);
         void ThrustOverrideZero();
-        void OnOffThrust(Direction dir = Direction.Forward, bool on = true);
+        void OnOffThrust(Direction dir = Direction.Backward, bool on = true);
     }
 }

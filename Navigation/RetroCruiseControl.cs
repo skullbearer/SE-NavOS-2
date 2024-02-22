@@ -68,21 +68,25 @@ namespace IngameScript
         /// <summary>
         /// timeToStop + value to start rotating the ship for deceleration
         /// </summary>
-        public double decelStartMarginSeconds = 10;
+        public double decelStartMarginSeconds = 10d;
 
         /// <summary>
         /// aim/orient tolerance in radians
         /// </summary>
         public double OrientToleranceAngleRadians { get; set; } = 0.100 * DegToRadMulti;
 
-        public double maxInitialPerpendicularVelocity = 1;
+        public double maxInitialPerpendicularVelocity = 10d;
 
         //useful for overestimating stop time and dist for better cruise accuracy
         public double stopTimeAndDistanceMulti = 1.05;
 
         private IVariableThrustController thrustController;
+        private IVariableThrustController otherThrustController;
+
         private Program program;
         private Config config;
+
+        private bool initDampenerState;
 
         //active variables
         private RetroCruiseStage _stage;
@@ -115,17 +119,22 @@ namespace IngameScript
             IMyShipController controller,
             IList<IMyGyro> gyros,
             IVariableThrustController thrustController,
+            IVariableThrustController otherThrustController,
             Program program)
             : base(aimControl, controller, gyros)
         {
             this.Target = target;
             this.DesiredSpeed = desiredSpeed;
             this.thrustController = thrustController;
+            this.otherThrustController = otherThrustController;
             this.program = program;
             this.config = program.config;
+
+            this.initDampenerState = controller.DampenersOverride; //We'll set it back to this after we stop.
             
             Stage = RetroCruiseStage.None;
             gridMass = controller.CalculateShipMass().PhysicalMass;
+            maxInitialPerpendicularVelocity *= this.DesiredSpeed / 100d; // Uses the maxInitialPerpendicularVelocity as a percent rather than a whole value
 
             UpdateForwardThrustAndAccel();
         }
@@ -137,6 +146,7 @@ namespace IngameScript
             IMyShipController controller,
             IList<IMyGyro> gyros,
             IVariableThrustController thrustController,
+            IVariableThrustController otherThrustController,
             Program program,
             RetroCruiseStage stage)
             : this(
@@ -146,6 +156,7 @@ namespace IngameScript
                   controller,
                   gyros,
                   thrustController,
+                  otherThrustController,
                   program)
         {
             initialStage = stage;
@@ -202,20 +213,40 @@ namespace IngameScript
 
         private void DampenAllDirections(Vector3D shipVelocity, float tolerance = DAMPENER_TOLERANCE)
         {
-            Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
+            /*Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
             Vector3 thrustAmount = localVelocity * gridMass;
-            thrustController.SetThrusts(thrustAmount, tolerance);
+            thrustController.SetThrusts(thrustAmount, tolerance);*/
+
+            // Simply turn on the dampeners, the thrusters are as or more efficient and with greater stopping precision, no need to replicate a built in function.
+            if(!ShipController.DampenersOverride) ShipController.DampenersOverride = true;
+            if (!config.UseOnlyNavThrustForManeuvers) TurnOnAllThrusters(otherThrustController);
+            TurnOnAllThrusters(thrustController);
         }
 
         private void DampenSidewaysToZero(Vector3D shipVelocity)
         {
+            /*
             Vector3 localVelocity = Vector3D.TransformNormal(shipVelocity, MatrixD.Transpose(ShipController.WorldMatrix));
             Vector3 thrustAmount = localVelocity * gridMass;
             float right = thrustAmount.X < 0 ? -thrustAmount.X : 0;
             float left = thrustAmount.X > 0 ? thrustAmount.X : 0;
             float up = thrustAmount.Y < 0 ? -thrustAmount.Y : 0;
             float down = thrustAmount.Y > 0 ? thrustAmount.Y : 0;
-            thrustController.SetSideThrusts(left, right, up, down);
+            thrustController.SetSideThrusts(left, right, up, down);*/
+
+            //Just turning on the dampeners... and overridng the thrusters we DON'T want to dampen on.
+            if (!ShipController.DampenersOverride) ShipController.DampenersOverride = true;
+            if (!config.UseOnlyNavThrustForManeuvers)
+            {
+                otherThrustController.OnOffThrust(Direction.Left);
+                otherThrustController.OnOffThrust(Direction.Right);
+                otherThrustController.OnOffThrust(Direction.Up);
+                otherThrustController.OnOffThrust(Direction.Down);
+            }
+            thrustController.OnOffThrust(Direction.Left);
+            thrustController.OnOffThrust(Direction.Right);
+            thrustController.OnOffThrust(Direction.Up);
+            thrustController.OnOffThrust(Direction.Down);
         }
 
         public void Run()
@@ -228,16 +259,18 @@ namespace IngameScript
             if (Stage == RetroCruiseStage.None)
             {
                 ResetGyroOverride();
-                thrustController.ResetThrustOverrides();
-                TurnOnAllThrusters();
+                //thrustController.ResetThrustOverrides();
+                TurnOnAllThrusters(thrustController); //Also resets all overrides.
+                if (config.DeactivateForwardThrustInCruise) thrustController.OnOffThrust(Direction.Backward, false); //Turn off reverse thrust.
                 thrustController.UpdateThrusts();
+                TurnOnAllThrusters(otherThrustController, false); //Turn off thrusters not in NavThrust for now.
             }
 
             if (counter10)
             {
                 lastAimDirectionAngleRad = null;
 
-                SetDampenerState(false);
+                //SetDampenerState(false);
             }
             if (counter30)
             {
@@ -325,9 +358,11 @@ namespace IngameScript
                 if (Stage <= RetroCruiseStage.OrientAndAccelerate)
                 {
                     double currentAndDesiredSpeedDelta = Math.Abs(DesiredSpeed - mySpeed);
+                    Vector3D correctionDirection = -Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection);
+                    double correctionSpeed = correctionDirection.Length();
 
-                    accelTime = (currentAndDesiredSpeedDelta / forwardAccelPremultiplied);
-                    double accelDist = accelTime * ((mySpeed + DesiredSpeed) * 0.5);
+                    accelTime = ((currentAndDesiredSpeedDelta + correctionSpeed) / forwardAccelPremultiplied);
+                    double accelDist = accelTime * ((mySpeed + DesiredSpeed + correctionSpeed) * 0.5);
 
                     actualStopTime = DesiredSpeed / forwardAccelPremultiplied * stopTimeAndDistanceMulti;
                     double actualStopDist = actualStopTime * (DesiredSpeed * 0.5);
@@ -403,16 +438,18 @@ namespace IngameScript
 
         private void ResetBackThrusts()
         {
+            /*
             var backThrusts = thrustController.Thrusters[Direction.Backward];
             for (int i = 0; i < backThrusts.Count; i++)
-                backThrusts[i].ThrustOverride = 0;
+                backThrusts[i].ThrustOverride = 0;*/
+            thrustController.OnOffThrust();
         }
 
-        public void TurnOnAllThrusters()
+        public void TurnOnAllThrusters(IVariableThrustController _thrustController, bool on = true)
         {
-            foreach (var kv in thrustController.Thrusters)
+            foreach (var kv in _thrustController.Thrusters)
                 for (int i = 0; i < kv.Value.Count; i++)
-                    kv.Value[i].Enabled = true;
+                { kv.Value[i].ThrustOverride = 0f; kv.Value[i].Enabled = on; } //Zeroing the override first avoids a rare bug where thruster will not toggle and/or override remains stuck.
         }
 
         private void SetDampenerState(bool enabled) => ShipController.DampenersOverride = enabled;
@@ -421,7 +458,7 @@ namespace IngameScript
         {
             thrustController.ResetThrustOverrides();
             ResetGyroOverride();
-            SetDampenerState(false);
+            //SetDampenerState(false); //We are now dampener state agnostic
             lastAimDirectionAngleRad = null;
             decelerating = false;
             config.PersistStateData = $"{NavModeEnum.Cruise}|{DesiredSpeed}|{Stage}";
@@ -452,7 +489,7 @@ namespace IngameScript
             }
 
             if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
-            {
+            { 
                 float overrideAmount = MathHelper.Clamp(((float)perpSpeed * 5 * gridMass) * forwardThrustInv, 0, MaxThrustRatio);
                 foreach (var thruster in thrustController.Thrusters[Direction.Forward])
                 {
@@ -496,8 +533,10 @@ namespace IngameScript
                 lastAimDirectionAngleRad = AngleRadiansBetweenVectorAndControllerForward(aimDirection);
             }
 
-            if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
-            {
+            //if (lastAimDirectionAngleRad.Value <= OrientToleranceAngleRadians)
+            if (Vector3D.Dot(ShipController.WorldMatrix.Forward, Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection)) >= 0d &&
+                Vector3D.Dot(ShipController.WorldMatrix.Forward, targetDirection) >= 0)
+            {  //If we are not going to increase our lateral velocity error AND we're pointed towards the target direction
                 noSpeedOnStart = false;
 
                 bool desiredSpeedReached = approaching && mySpeed >= DesiredSpeed;
@@ -515,6 +554,7 @@ namespace IngameScript
                 else if (desiredSpeedReached)
                 {
                     Stage = RetroCruiseStage.OrientAndDecelerate;
+                    if(ShipController.DampenersOverride) TurnOnAllThrusters(thrustController, false); //Turn off the thrusters to avoid slowing down by dampeners
                     return;
                 }
                 else
@@ -561,8 +601,8 @@ namespace IngameScript
                 Stage = RetroCruiseStage.DecelerateNoOrient;
                 return;
             }
-
-            Vector3D orientForward = -(targetDirection + myVelocity);
+            Vector3D latCorrection = Vector3D.ProjectOnPlane(ref targetDirection, ref myVelocity);
+            Vector3D orientForward = -(targetDirection + myVelocity + latCorrection);
 
             Orient(orientForward);
 
@@ -591,7 +631,11 @@ namespace IngameScript
             
                 var foreThrusts = thrustController.Thrusters[Direction.Forward];
                 for (int i = 0; i < foreThrusts.Count; i++)
-                    foreThrusts[i].ThrustOverridePercentage = overrideAmount;
+                    if (overrideAmount == 1)
+                    { //Dampeners are more powerful and fuel efficient than override thrust, with no increased signal production
+                        if (!ShipController.DampenersOverride) ShipController.DampenersOverride = true; 
+                        thrustController.OnOffThrust(Direction.Forward); }  
+                    else foreThrusts[i].ThrustOverridePercentage = overrideAmount;
 
                 //DampenSidewaysToZero(myVelocity * 5);
                 Vector3D perp = -Vector3D.ProjectOnPlane(ref myVelocity, ref targetDirection);
@@ -662,14 +706,17 @@ namespace IngameScript
 
         private void Complete()
         {
-            SetDampenerState(true);
+            SetDampenerState(initDampenerState);
             Terminate(distanceToTarget < 10 ? "Destination Reached" : "Terminated");
         }
 
         public void Terminate(string reason)
         {
             thrustController.ResetThrustOverrides();
-            TurnOnAllThrusters();
+            TurnOnAllThrusters(thrustController);
+            TurnOnAllThrusters(otherThrustController);
+
+            if (ShipController.DampenersOverride != initDampenerState) ShipController.DampenersOverride = initDampenerState;
 
             ResetGyroOverride();
 

@@ -30,6 +30,7 @@ namespace IngameScript
         public bool MaintainDesiredSpeed { get; set; } = true;
         public List<string> JourneySetup { get; } = new List<string>();
         public bool DeactivateForwardThrustInCruise { get; set; } = true;
+        public bool UseOnlyNavThrustForManeuvers { get; set; } = false;
         public bool RequireDampenersForSpeedMatch { get; set; } = true;
 
         private Config() { }
